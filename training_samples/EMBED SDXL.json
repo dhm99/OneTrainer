@@ -1,0 +1,14 @@
+[
+    {
+        "enabled": true,
+        "prompt": "<embedding>",
+        "negative_prompt": "",
+        "height": 1024,
+        "width": 1024,
+        "seed": 1234,
+        "random_seed": false,
+        "diffusion_steps": 20,
+        "cfg_scale": 7.0,
+        "noise_scheduler": "DDIM"
+    }
+]
