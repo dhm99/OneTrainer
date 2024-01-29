@@ -150,6 +150,6 @@
     "rolling_backup": true,
     "rolling_backup_count": 3,
     "backup_before_save": true,
-    "save_after": 20,
+    "save_after": 100,
     "save_after_unit": "EPOCH"
 }
