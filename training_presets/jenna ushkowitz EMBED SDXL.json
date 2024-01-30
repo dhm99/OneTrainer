@@ -91,7 +91,7 @@
     "embedding_model_names": [],
     "token_count": 4,
     "initial_embedding_text": "*",
-    "embedding_weight_dtype": "BFLOAT_16",
+    "embedding_weight_dtype": "FLOAT_32",
     "lora_model_name": "",
     "lora_rank": 64,
     "lora_alpha": 24.0,
