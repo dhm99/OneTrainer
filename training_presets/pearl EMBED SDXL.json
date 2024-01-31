@@ -9,7 +9,7 @@
     "tensorboard_expose": false,
     "continue_last_backup": false,
     "base_model_name": "stabilityai/stable-diffusion-xl-base-1.0",
-    "weight_dtype": "BFLOAT_16",
+    "weight_dtype": "FLOAT_32",
     "output_dtype": "FLOAT_32",
     "output_model_format": "SAFETENSORS",
     "output_model_destination": "models/file.safetensors",
