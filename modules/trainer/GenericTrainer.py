@@ -574,6 +574,22 @@ class GenericTrainer(BaseTrainer):
                 dtype=self.args.output_dtype.torch_dtype()
             )
 
+            # Save the final model into the save directory
+            train_progress = self.model.train_progress
+            save_path = os.path.join(
+                self.args.workspace_dir,
+                "save",
+                f"{get_string_timestamp()}-save-{train_progress.filename_string()}{self.args.output_model_format.file_extension()}"
+            )
+            print("Saving " + save_path)
+            self.model_saver.save(
+                model=self.model,
+                model_type=self.args.model_type,
+                output_model_format=self.args.output_model_format,
+                output_model_destination=save_path,
+                dtype=self.args.output_dtype.torch_dtype()
+            )
+
         self.tensorboard.close()
 
         if self.args.tensorboard:
