@@ -34,7 +34,8 @@ def lr_lambda_cosine(
     def lr_lambda(current_step: int):
         progress = float(current_step) / float(scheduler_steps)
         # current_step appear to exceed scheduler_steps by the following ratio
-        ratio = 300.0 / 420.0
+        #ratio = 300.0 / 420.0
+        ratio = 1.0
         schedule = math.cos(progress * ratio * math.pi)
         return max(0.0, 0.5 * (1.0 + schedule))
 
