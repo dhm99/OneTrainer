@@ -1,0 +1,15 @@
+[
+    {
+        "__version": 0,
+        "enabled": true,
+        "prompt": "voluptuous asian woman, solo, score_9, score_8_up, score_7_up, score_6_up, score_5_up, score_4_up",
+        "negative_prompt": "",
+        "height": 1024,
+        "width": 1024,
+        "seed": 1234,
+        "random_seed": false,
+        "diffusion_steps": 25,
+        "cfg_scale": 7.0,
+        "noise_scheduler": "DPMPP_KARRAS"
+    }
+]
