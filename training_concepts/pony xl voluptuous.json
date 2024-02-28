@@ -37,7 +37,7 @@
         "seed": 429952977,
         "enabled": true,
         "include_subdirectories": false,
-        "image_variations": 3,
+        "image_variations": 5,
         "text_variations": 1,
         "repeats": 1.0,
         "loss_weight": 1.0
