@@ -1,0 +1,45 @@
+[
+    {
+        "__version": 0,
+        "image": {
+            "__version": 0,
+            "enable_crop_jitter": false,
+            "enable_random_flip": false,
+            "enable_fixed_flip": false,
+            "enable_random_rotate": true,
+            "enable_fixed_rotate": false,
+            "random_rotate_max_angle": 1.0,
+            "enable_random_brightness": false,
+            "enable_fixed_brightness": false,
+            "random_brightness_max_strength": 0.0,
+            "enable_random_contrast": false,
+            "enable_fixed_contrast": false,
+            "random_contrast_max_strength": 0.0,
+            "enable_random_saturation": false,
+            "enable_fixed_saturation": false,
+            "random_saturation_max_strength": 0.0,
+            "enable_random_hue": false,
+            "enable_fixed_hue": false,
+            "random_hue_max_strength": 0.0,
+            "enable_resolution_override": true,
+            "resolution_override": "896,960,1024,1088,1152"
+        },
+        "text": {
+            "__version": 0,
+            "prompt_source": "sample",
+            "prompt_path": "",
+            "enable_tag_shuffling": false,
+            "tag_delimiter": ",",
+            "keep_tags_count": 1
+        },
+        "name": "plmiller",
+        "path": "C:/Users/dhmmi/SD_Training/OneTrainer_Images/plmiller",
+        "seed": 429952977,
+        "enabled": true,
+        "include_subdirectories": false,
+        "image_variations": 5,
+        "text_variations": 1,
+        "repeats": 1.0,
+        "loss_weight": 1.0
+    }
+]

@@ -1,0 +1,15 @@
+[
+    {
+        "__version": 0,
+        "enabled": true,
+        "prompt": "plmiller, score_9, 1girl, curvy, lovely face, 27 years old, brown hair, brown eyes, photorealistic",
+        "negative_prompt": "",
+        "height": 1024,
+        "width": 1024,
+        "seed": 1234,
+        "random_seed": false,
+        "diffusion_steps": 25,
+        "cfg_scale": 7.0,
+        "noise_scheduler": "DPMPP_KARRAS"
+    }
+]
