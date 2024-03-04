@@ -84,7 +84,7 @@
         "__version": 0,
         "model_name": "",
         "train": true,
-        "stop_training_after": 50,
+        "stop_training_after": 100000,
         "stop_training_after_unit": "EPOCH",
         "learning_rate": null,
         "weight_dtype": "NONE"
