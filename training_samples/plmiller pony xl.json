@@ -2,7 +2,7 @@
     {
         "__version": 0,
         "enabled": true,
-        "prompt": "plmiller, score_9, 1girl, curvy, lovely face, 27 years old, brown hair, brown eyes, photorealistic",
+        "prompt": "plmiller, score_9, score_8_up, score_7_up, score_6_up, score_5_up, score_4_up",
         "negative_prompt": "",
         "height": 1024,
         "width": 1024,

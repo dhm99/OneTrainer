@@ -83,8 +83,8 @@
     "text_encoder": {
         "__version": 0,
         "model_name": "",
-        "train": false,
-        "stop_training_after": 100000,
+        "train": true,
+        "stop_training_after": 50,
         "stop_training_after_unit": "EPOCH",
         "learning_rate": null,
         "weight_dtype": "NONE"
@@ -93,8 +93,8 @@
     "text_encoder_2": {
         "__version": 0,
         "model_name": "",
-        "train": true,
-        "stop_training_after": 100000,
+        "train": false,
+        "stop_training_after": 30,
         "stop_training_after_unit": "EPOCH",
         "learning_rate": null,
         "weight_dtype": "NONE"
