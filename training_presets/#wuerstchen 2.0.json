@@ -25,6 +25,7 @@
         "eps2": 0.001,
         "relative_step": false,
         "scale_parameter": false,
+        "stochastic_rounding": true,
         "warmup_init": false,
         "weight_decay": 0.0
     },
@@ -39,6 +40,7 @@
             "eps2": 0.001,
             "relative_step": false,
             "scale_parameter": false,
+            "stochastic_rounding": true,
             "warmup_init": false,
             "weight_decay": 0.0
         }
@@ -46,5 +48,7 @@
     "output_model_destination": "models/model",
     "output_model_format": "DIFFUSERS",
     "resolution": "1024",
-    "training_method": "FINE_TUNE"
+    "training_method": "FINE_TUNE",
+    "loss_weight_fn": "P2",
+    "loss_weight_strength": 1.0
 }

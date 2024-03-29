@@ -89,6 +89,13 @@ class StableDiffusionXLLoRASetup(BaseStableDiffusionXLSetup):
                 model.unet, config.lora_rank, "lora_unet", config.lora_alpha, ["attentions"]
             )
 
+        if model.text_encoder_1_lora:
+            model.text_encoder_1_lora.set_dropout(config.dropout_probability)
+        if model.text_encoder_2_lora:
+            model.text_encoder_2_lora.set_dropout(config.dropout_probability)
+        if model.unet_lora:
+            model.unet_lora.set_dropout(config.dropout_probability)
+
         model.text_encoder_1.requires_grad_(False)
         model.text_encoder_2.requires_grad_(False)
         model.unet.requires_grad_(False)
@@ -180,3 +187,27 @@ class StableDiffusionXLLoRASetup(BaseStableDiffusionXLSetup):
             train_unet = config.unet.train and \
                          not self.stop_unet_training_elapsed(config, model.train_progress)
             model.unet_lora.requires_grad_(train_unet)
+
+    def report_learning_rates(
+            self,
+            model,
+            config,
+            scheduler,
+            tensorboard
+    ):
+        lrs = scheduler.get_last_lr()
+        names = []
+        if config.text_encoder.train:
+            names.append("te1")
+        if config.text_encoder_2.train:
+            names.append("te2")
+        if config.unet.train:
+            names.append("unet")
+        assert len(lrs) == len(names)
+
+        lrs = config.optimizer.optimizer.maybe_adjust_lrs(lrs, model.optimizer)
+
+        for name, lr in zip(names, lrs):
+            tensorboard.add_scalar(
+                f"lr/{name}", lr, model.train_progress.global_step
+            )
