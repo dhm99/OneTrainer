@@ -73,6 +73,11 @@ class PixArtAlphaLoRASetup(BasePixArtAlphaSetup):
                 model.transformer, config.lora_rank, "lora_transformer", config.lora_alpha, ["attn1", "attn2"]
             )
 
+        if model.text_encoder_lora:
+            model.text_encoder_lora.set_dropout(config.dropout_probability)
+        if model.transformer_lora:
+            model.transformer_lora.set_dropout(config.dropout_probability)
+
         model.text_encoder.requires_grad_(False)
         model.transformer.requires_grad_(False)
         model.vae.requires_grad_(False)
@@ -154,3 +159,25 @@ class PixArtAlphaLoRASetup(BasePixArtAlphaSetup):
             train_prior = config.prior.train and \
                                  not self.stop_prior_training_elapsed(config, model.train_progress)
             model.transformer_lora.requires_grad_(train_prior)
+
+    def report_learning_rates(
+            self,
+            model,
+            config,
+            scheduler,
+            tensorboard
+    ):
+        lrs = scheduler.get_last_lr()
+        names = []
+        if config.text_encoder.train:
+            names.append("te")
+        if config.prior.train:
+            names.append("prior")
+        assert len(lrs) == len(names)
+
+        lrs = config.optimizer.optimizer.maybe_adjust_lrs(lrs, model.optimizer)
+
+        for name, lr in zip(names, lrs):
+            tensorboard.add_scalar(
+                f"lr/{name}", lr, model.train_progress.global_step
+            )

@@ -53,6 +53,8 @@ OPTIMIZER_DEFAULT_PARAMETERS = {
         "scale_parameter": True,
         "relative_step": True,
         "warmup_init": False,
+        "stochastic_rounding": True,
+        "fused_back_pass": False,
     },
     Optimizer.ADAGRAD: {
         "lr_decay": 0,
@@ -255,6 +257,7 @@ OPTIMIZER_DEFAULT_PARAMETERS = {
         "capturable": False,
         "differentiable": False,
         "fused": True,
+        "stochastic_rounding": False,
     },
     Optimizer.ADAMW: {
         "beta1": 0.9,
@@ -267,6 +270,7 @@ OPTIMIZER_DEFAULT_PARAMETERS = {
         "capturable": False,
         "differentiable": False,
         "fused": True,
+        "stochastic_rounding": False,
     },
     Optimizer.SGD: {
         "momentum": 0,

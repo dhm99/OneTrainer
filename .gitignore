@@ -10,3 +10,4 @@ train.bat
 config.json
 *.pyc
 *.bak
+/src
