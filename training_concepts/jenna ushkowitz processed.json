@@ -22,7 +22,7 @@
             "enable_fixed_hue": false,
             "random_hue_max_strength": 0.0,
             "enable_resolution_override": true,
-            "resolution_override": "128,256,512,768,1024"
+            "resolution_override": "120,248,504,760,1024"
         },
         "text": {
             "__version": 0,
@@ -34,7 +34,7 @@
         },
         "name": "jenna ushkowitz processed",
         "path": "C:/Users/dhmmi/SD_Training/OneTrainer_Images/jenna ushkowitz processed",
-        "seed": 728410096,
+        "seed": 9876543,
         "enabled": true,
         "include_subdirectories": false,
         "image_variations": 5,
