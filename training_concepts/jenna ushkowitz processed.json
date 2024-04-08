@@ -22,7 +22,7 @@
             "enable_fixed_hue": false,
             "random_hue_max_strength": 0.0,
             "enable_resolution_override": true,
-            "resolution_override": "256,512,768,1024"
+            "resolution_override": "128,256,512,768,1024"
         },
         "text": {
             "__version": 0,
@@ -37,7 +37,7 @@
         "seed": 728410096,
         "enabled": true,
         "include_subdirectories": false,
-        "image_variations": 4,
+        "image_variations": 5,
         "text_variations": 1,
         "repeats": 5.0,
         "loss_weight": 1.0
