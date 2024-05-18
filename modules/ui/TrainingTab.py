@@ -1,6 +1,7 @@
 import customtkinter as ctk
 
 from modules.ui.OptimizerParamsWindow import OptimizerParamsWindow
+from modules.ui.SchedulerParamsWindow import SchedulerParamsWindow
 from modules.util.config.TrainConfig import TrainConfig
 from modules.util.enum.AlignPropLoss import AlignPropLoss
 from modules.util.enum.AttentionMechanism import AttentionMechanism
@@ -67,6 +68,7 @@ class TrainingTab:
     def __setup_stable_diffusion_ui(self, column_0, column_1, column_2):
         self.__create_base_frame(column_0, 0)
         self.__create_text_encoder_frame(column_0, 1)
+        self.__create_embedding_frame(column_0, 2)
 
         self.__create_base2_frame(column_1, 0)
         self.__create_unet_frame(column_1, 1)
@@ -80,6 +82,7 @@ class TrainingTab:
         self.__create_base_frame(column_0, 0)
         self.__create_text_encoder_1_frame(column_0, 1)
         self.__create_text_encoder_2_frame(column_0, 2)
+        self.__create_embedding_frame(column_0, 3)
 
         self.__create_base2_frame(column_1, 0)
         self.__create_unet_frame(column_1, 1)
@@ -92,6 +95,7 @@ class TrainingTab:
     def __setup_wuerstchen_ui(self, column_0, column_1, column_2):
         self.__create_base_frame(column_0, 0)
         self.__create_text_encoder_frame(column_0, 1)
+        self.__create_embedding_frame(column_0, 2)
 
         self.__create_base2_frame(column_1, 0)
         self.__create_prior_frame(column_1, 1)
@@ -103,6 +107,7 @@ class TrainingTab:
     def __setup_pixart_alpha_ui(self, column_0, column_1, column_2):
         self.__create_base_frame(column_0, 0)
         self.__create_text_encoder_frame(column_0, 1)
+        self.__create_embedding_frame(column_0, 2)
 
         self.__create_base2_frame(column_1, 0)
         self.__create_prior_frame(column_1, 1)
@@ -124,10 +129,19 @@ class TrainingTab:
                                command=self.__restore_optimizer_config, adv_command=self.__open_optimizer_params_window)
 
         # learning rate scheduler
+        # Wackiness will ensue when reloading configs if we don't check and clear this first.
+        if hasattr(self, "lr_scheduler_comp"):
+            delattr(self, "lr_scheduler_comp")
+            delattr(self, "lr_scheduler_adv_comp")
         components.label(frame, 1, 0, "Learning Rate Scheduler",
                          tooltip="Learning rate scheduler that automatically changes the learning rate during training")
-        components.options(frame, 1, 1, [str(x) for x in list(LearningRateScheduler)], self.ui_state,
-                           "learning_rate_scheduler")
+        _, d = components.options_adv(frame, 1, 1, [str(x) for x in list(LearningRateScheduler)], self.ui_state,
+                                      "learning_rate_scheduler", command=self.__restore_scheduler_config,
+                                      adv_command=self.__open_scheduler_params_window)
+        self.lr_scheduler_comp = d['component']
+        self.lr_scheduler_adv_comp = d['button_component']
+        # Initial call requires the presence of self.lr_scheduler_adv_comp.
+        self.__restore_scheduler_config(self.ui_state.get_var("learning_rate_scheduler").get())
 
         # learning rate
         components.label(frame, 2, 0, "Learning Rate",
@@ -220,11 +234,15 @@ class TrainingTab:
                          tooltip="Enables the autocast cache. Disabling this reduces memory usage, but increases training time")
         components.switch(frame, 7, 1, self.ui_state, "enable_autocast_cache")
 
-
         # resolution
         components.label(frame, 8, 0, "Resolution",
                          tooltip="The resolution used for training. Optionally specify multiple resolutions separated by a comma.")
         components.entry(frame, 8, 1, self.ui_state, "resolution")
+
+        # force circular padding
+        components.label(frame, 9, 0, "Force Circular Padding",
+                         tooltip="Enables circular padding for all conv layers to better train seamless images")
+        components.switch(frame, 9, 1, self.ui_state, "force_circular_padding")
 
     def __create_align_prop_frame(self, master, row):
         frame = ctk.CTkFrame(master=master, corner_radius=5)
@@ -289,7 +307,7 @@ class TrainingTab:
 
         # text encoder layer skip (clip skip)
         components.label(frame, 3, 0, "Clip Skip",
-                         tooltip="The number of clip layers to skip. 0 = disabled")
+                         tooltip="The number of additional clip layers to skip. 0 = the model default")
         components.entry(frame, 3, 1, self.ui_state, "text_encoder_layer_skip")
 
     def __create_text_encoder_1_frame(self, master, row):
@@ -314,8 +332,8 @@ class TrainingTab:
         components.entry(frame, 2, 1, self.ui_state, "text_encoder.learning_rate")
 
         # text encoder layer skip (clip skip)
-        components.label(frame, 3, 0, "Clip Skip 1",
-                         tooltip="The number of clip layers to skip. 0 = disabled")
+        components.label(frame, 3, 0, "Text Encoder 1 Clip Skip",
+                         tooltip="The number of additional clip layers to skip. 0 = the model default")
         components.entry(frame, 3, 1, self.ui_state, "text_encoder_layer_skip")
 
     def __create_text_encoder_2_frame(self, master, row):
@@ -340,9 +358,23 @@ class TrainingTab:
         components.entry(frame, 2, 1, self.ui_state, "text_encoder_2.learning_rate")
 
         # text encoder layer skip (clip skip)
-        components.label(frame, 3, 0, "Clip Skip 2",
-                         tooltip="The number of clip layers to skip. 0 = disabled")
+        components.label(frame, 3, 0, "Text Encoder 2 Clip Skip",
+                         tooltip="The number of additional clip layers to skip. 0 = the model default")
         components.entry(frame, 3, 1, self.ui_state, "text_encoder_2_layer_skip")
+
+    def __create_embedding_frame(self, master, row):
+        frame = ctk.CTkFrame(master=master, corner_radius=5)
+        frame.grid(row=row, column=0, padx=5, pady=5, sticky="nsew")
+
+        # embedding learning rate
+        components.label(frame, 0, 0, "Embeddings Learning Rate",
+                         tooltip="The learning rate of embeddings. Overrides the base learning rate")
+        components.entry(frame, 0, 1, self.ui_state, "embedding_learning_rate")
+
+        # preserve embedding norm
+        components.label(frame, 1, 0, "Preserve Embedding Norm",
+                         tooltip="Rescales each trained embedding to the median embedding norm")
+        components.switch(frame, 1, 1, self.ui_state, "preserve_embedding_norm")
 
     def __create_unet_frame(self, master, row):
         frame = ctk.CTkFrame(master=master, corner_radius=5)
@@ -478,7 +510,7 @@ class TrainingTab:
         components.label(frame, 3, 0, "Loss Weight Function",
                          tooltip="Choice of loss weight function. Can help the model learn details more accurately.")
         components.options(frame, 3, 1, [str(x) for x in list(LossWeight)], self.ui_state, "loss_weight_fn")
-        
+
         # Loss weight strength
         components.label(frame, 4, 0, "Gamma",
                          tooltip="Inverse strength of loss weighting. Range: 1-20, only applies to Min SNR and P2.")
@@ -493,6 +525,19 @@ class TrainingTab:
         window = OptimizerParamsWindow(self.master, self.train_config, self.ui_state)
         self.master.wait_window(window)
 
+    def __open_scheduler_params_window(self):
+        window = SchedulerParamsWindow(self.master, self.train_config, self.ui_state)
+        self.master.wait_window(window)
+
     def __restore_optimizer_config(self, *args):
         optimizer_config = change_optimizer(self.train_config)
         self.ui_state.get_var("optimizer").update(optimizer_config)
+
+    def __restore_scheduler_config(self, variable):
+        if not hasattr(self, 'lr_scheduler_adv_comp'):
+            return
+
+        if variable == "CUSTOM":
+            self.lr_scheduler_adv_comp.configure(state="normal")
+        else:
+            self.lr_scheduler_adv_comp.configure(state="disabled")
