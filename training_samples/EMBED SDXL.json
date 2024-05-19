@@ -1,5 +1,6 @@
 [
     {
+        "__version": 0,
         "enabled": true,
         "prompt": "photograph of <embedding>",
         "negative_prompt": "",
