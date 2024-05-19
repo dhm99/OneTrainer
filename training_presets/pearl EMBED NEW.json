@@ -12,7 +12,7 @@
     "include_train_config": "NONE",
     "base_model_name": "stabilityai/stable-diffusion-xl-base-1.0",
     "weight_dtype": "BFLOAT_16",
-    "output_dtype": "BFLOAT_16",
+    "output_dtype": "FLOAT_32",
     "output_model_format": "SAFETENSORS",
     "output_model_destination": "models/file.safetensors",
     "gradient_checkpointing": true,
@@ -24,10 +24,10 @@
     "aspect_ratio_bucketing": true,
     "latent_caching": true,
     "clear_cache_before_training": true,
-    "learning_rate_scheduler": "REX",
+    "learning_rate_scheduler": "CONSTANT",
     "custom_learning_rate_scheduler": null,
     "scheduler_params": [],
-    "learning_rate": 1.0,
+    "learning_rate": 0.5,
     "learning_rate_warmup_steps": 0,
     "learning_rate_cycles": 1,
     "epochs": 300,
@@ -156,7 +156,7 @@
     "unmasked_probability": 0.0,
     "unmasked_weight": 0.0,
     "normalize_masked_area_loss": false,
-    "embedding_learning_rate": null,
+    "embedding_learning_rate": 1.0,
     "preserve_embedding_norm": true,
     "embedding": {
         "__version": 0,
@@ -166,7 +166,7 @@
         "train": true,
         "stop_training_after": null,
         "stop_training_after_unit": "NEVER",
-        "token_count": 6,
+        "token_count": 10,
         "initial_embedding_text": "jenna ushkowitz"
     },
     "additional_embeddings": [],
@@ -390,7 +390,7 @@
     "rolling_backup": true,
     "rolling_backup_count": 3,
     "backup_before_save": true,
-    "save_after": 100,
+    "save_after": 50,
     "save_after_unit": "EPOCH",
     "save_filename_prefix": ""
 }
