@@ -90,7 +90,7 @@
     "text_encoder": {
         "__version": 0,
         "model_name": "",
-        "train": true,
+        "train": false,
         "stop_training_after": 10000,
         "stop_training_after_unit": "EPOCH",
         "learning_rate": null,
