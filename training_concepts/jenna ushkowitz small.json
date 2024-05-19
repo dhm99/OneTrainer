@@ -39,7 +39,7 @@
         "include_subdirectories": false,
         "image_variations": 3,
         "text_variations": 1,
-        "balancing": 1.0,
+        "balancing": 5.0,
         "balancing_strategy": "REPEATS",
         "loss_weight": 1.0
     }
