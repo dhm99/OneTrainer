@@ -30,7 +30,7 @@
     "learning_rate": 1.0,
     "learning_rate_warmup_steps": 1,
     "learning_rate_cycles": 1,
-    "epochs": 200,
+    "epochs": 300,
     "batch_size": 4,
     "gradient_accumulation_steps": 1,
     "ema": "OFF",
@@ -91,7 +91,7 @@
         "__version": 0,
         "model_name": "",
         "train": true,
-        "stop_training_after": 50,
+        "stop_training_after": 10000,
         "stop_training_after_unit": "EPOCH",
         "learning_rate": null,
         "weight_dtype": "NONE"
@@ -172,8 +172,8 @@
     "additional_embeddings": [],
     "embedding_weight_dtype": "FLOAT_32",
     "lora_model_name": "",
-    "lora_rank": 32,
-    "lora_alpha": 16.0,
+    "lora_rank": 64,
+    "lora_alpha": 32.0,
     "lora_weight_dtype": "FLOAT_32",
     "bundle_additional_embeddings": true,
     "optimizer": {

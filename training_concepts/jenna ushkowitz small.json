@@ -6,9 +6,9 @@
             "enable_crop_jitter": false,
             "enable_random_flip": false,
             "enable_fixed_flip": false,
-            "enable_random_rotate": false,
+            "enable_random_rotate": true,
             "enable_fixed_rotate": false,
-            "random_rotate_max_angle": 0.0,
+            "random_rotate_max_angle": 1.0,
             "enable_random_brightness": false,
             "enable_fixed_brightness": false,
             "random_brightness_max_strength": 0.0,
@@ -22,7 +22,7 @@
             "enable_fixed_hue": false,
             "random_hue_max_strength": 0.0,
             "enable_resolution_override": true,
-            "resolution_override": "120,248,504"
+            "resolution_override": "128,256,512,640"
         },
         "text": {
             "__version": 0,
@@ -37,7 +37,7 @@
         "seed": -14238497,
         "enabled": true,
         "include_subdirectories": false,
-        "image_variations": 3,
+        "image_variations": 4,
         "text_variations": 1,
         "balancing": 5.0,
         "balancing_strategy": "REPEATS",
