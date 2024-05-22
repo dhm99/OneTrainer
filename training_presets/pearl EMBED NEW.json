@@ -93,17 +93,17 @@
         "train": true,
         "stop_training_after": 10000,
         "stop_training_after_unit": "EPOCH",
-        "learning_rate": 0.0002,
+        "learning_rate": 5e-05,
         "weight_dtype": "NONE"
     },
     "text_encoder_layer_skip": 0,
     "text_encoder_2": {
         "__version": 0,
         "model_name": "",
-        "train": true,
+        "train": false,
         "stop_training_after": 10000,
         "stop_training_after_unit": "EPOCH",
-        "learning_rate": 0.0002,
+        "learning_rate": 5e-05,
         "weight_dtype": "NONE"
     },
     "text_encoder_2_layer_skip": 0,
@@ -152,7 +152,7 @@
         "learning_rate": null,
         "weight_dtype": "NONE"
     },
-    "masked_training": true,
+    "masked_training": false,
     "unmasked_probability": 0.0,
     "unmasked_weight": 0.0,
     "normalize_masked_area_loss": false,
@@ -166,8 +166,8 @@
         "train": true,
         "stop_training_after": null,
         "stop_training_after_unit": "NEVER",
-        "token_count": 10,
-        "initial_embedding_text": "jenna ushkowitz"
+        "token_count": 2,
+        "initial_embedding_text": "*"
     },
     "additional_embeddings": [],
     "embedding_weight_dtype": "FLOAT_32",
@@ -191,7 +191,7 @@
         "centered": false,
         "clip_threshold": null,
         "d0": 1e-06,
-        "d_coef": 4.0,
+        "d_coef": 2.0,
         "dampening": null,
         "decay_rate": null,
         "decouple": true,
@@ -342,7 +342,7 @@
             "centered": false,
             "clip_threshold": null,
             "d0": 1e-06,
-            "d_coef": 4.0,
+            "d_coef": 2.0,
             "dampening": null,
             "decay_rate": null,
             "decouple": true,
