@@ -1,33 +1,41 @@
 from abc import ABCMeta
 
-import torch
-from diffusers.models.attention_processor import AttnProcessor, XFormersAttnProcessor, AttnProcessor2_0, Attention
-from diffusers.utils import is_xformers_available
-from torch import Tensor
-
 from modules.model.WuerstchenModel import WuerstchenModel, WuerstchenModelEmbedding
 from modules.modelSetup.BaseModelSetup import BaseModelSetup
 from modules.modelSetup.mixin.ModelSetupDebugMixin import ModelSetupDebugMixin
 from modules.modelSetup.mixin.ModelSetupDiffusionLossMixin import ModelSetupDiffusionLossMixin
-from modules.modelSetup.mixin.ModelSetupDiffusionNoiseMixin import ModelSetupDiffusionNoiseMixin
+from modules.modelSetup.mixin.ModelSetupDiffusionMixin import ModelSetupDiffusionMixin
 from modules.modelSetup.mixin.ModelSetupEmbeddingMixin import ModelSetupEmbeddingMixin
-from modules.modelSetup.stableDiffusion.checkpointing_util import enable_checkpointing_for_clip_encoder_layers, \
-    enable_checkpointing_for_stable_cascade_blocks
+from modules.modelSetup.mixin.ModelSetupNoiseMixin import ModelSetupNoiseMixin
 from modules.module.AdditionalEmbeddingWrapper import AdditionalEmbeddingWrapper
-from modules.util.TrainProgress import TrainProgress
+from modules.util.checkpointing_util import (
+    enable_checkpointing_for_clip_encoder_layers,
+    enable_checkpointing_for_stable_cascade_blocks,
+)
 from modules.util.config.TrainConfig import TrainConfig
 from modules.util.conv_util import apply_circular_padding_to_conv2d
-from modules.util.dtype_util import create_autocast_context, disable_fp16_autocast_context, \
-    disable_bf16_on_fp16_autocast_context
+from modules.util.dtype_util import (
+    create_autocast_context,
+    disable_bf16_on_fp16_autocast_context,
+    disable_fp16_autocast_context,
+)
 from modules.util.enum.AttentionMechanism import AttentionMechanism
 from modules.util.enum.TrainingMethod import TrainingMethod
+from modules.util.TrainProgress import TrainProgress
+
+import torch
+from torch import Tensor
+
+from diffusers.models.attention_processor import Attention, AttnProcessor, AttnProcessor2_0, XFormersAttnProcessor
+from diffusers.utils import is_xformers_available
 
 
 class BaseWuerstchenSetup(
     BaseModelSetup,
     ModelSetupDiffusionLossMixin,
     ModelSetupDebugMixin,
-    ModelSetupDiffusionNoiseMixin,
+    ModelSetupNoiseMixin,
+    ModelSetupDiffusionMixin,
     ModelSetupEmbeddingMixin,
     metaclass=ABCMeta,
 ):
@@ -216,7 +224,6 @@ class BaseWuerstchenSetup(
                 generator,
                 scaled_latent_image.shape[0],
                 config,
-                train_progress.global_step,
             )
 
             if model.model_type.is_wuerstchen_v2():
@@ -231,23 +238,15 @@ class BaseWuerstchenSetup(
                 self.__alpha_cumprod,
             )
 
-            if config.text_encoder.train or config.train_any_embedding():
-                text_encoder_output = model.prior_text_encoder(
-                    batch['tokens'], output_hidden_states=True, return_dict=True
-                )
-                if model.model_type.is_wuerstchen_v2():
-                    final_layer_norm = model.prior_text_encoder.text_model.final_layer_norm
-                    text_embedding = final_layer_norm(
-                        text_encoder_output.hidden_states[-(1 + config.text_encoder_layer_skip)]
-                    )
-                if model.model_type.is_stable_cascade():
-                    text_embedding = text_encoder_output.hidden_states[-(1 + config.text_encoder_layer_skip)]
-                    if model.model_type.is_stable_cascade():
-                        pooled_text_text_embedding = text_encoder_output.text_embeds.unsqueeze(1)
-            else:
-                text_embedding = batch['text_encoder_hidden_state']
-                if model.model_type.is_stable_cascade():
-                    pooled_text_text_embedding = batch['pooled_text_encoder_output'].unsqueeze(1)
+            text_embedding, pooled_text_text_embedding = model.encode_text(
+                tokens=batch['tokens'],
+                tokens_mask=batch['tokens_mask'],
+                text_encoder_layer_skip=config.text_encoder_layer_skip,
+                text_encoder_output=batch[
+                    'text_encoder_hidden_state'] if not config.train_text_encoder_or_embedding() else None,
+                pooled_text_encoder_output=batch[
+                    'pooled_text_encoder_output'] if not config.train_text_encoder_or_embedding() else None,
+            )
 
             latent_input = scaled_noisy_latent_image
 

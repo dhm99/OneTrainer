@@ -2,15 +2,16 @@ import os
 from pathlib import Path
 from typing import Callable
 
-import torch
-from PIL import Image
-from torchvision.transforms import transforms
-
 from modules.model.StableDiffusionModel import StableDiffusionModel
 from modules.modelSampler.BaseModelSampler import BaseModelSampler
+from modules.util.config.SampleConfig import SampleConfig
 from modules.util.enum.ImageFormat import ImageFormat
 from modules.util.enum.ModelType import ModelType
-from modules.util.config.SampleConfig import SampleConfig
+
+import torch
+from torchvision.transforms import transforms
+
+from PIL import Image
 
 
 class StableDiffusionVaeSampler(BaseModelSampler):
@@ -28,16 +29,14 @@ class StableDiffusionVaeSampler(BaseModelSampler):
 
     def sample(
             self,
-            sample_params: SampleConfig,
+            sample_config: SampleConfig,
             destination: str,
             image_format: ImageFormat,
-            text_encoder_layer_skip: int,
-            force_last_timestep: bool = False,
             on_sample: Callable[[Image], None] = lambda _: None,
             on_update_progress: Callable[[int, int], None] = lambda _, __: None,
     ):
         # TODO: this is reusing the prompt parameters as the image path, think of a better solution
-        image = Image.open(sample_params.prompt)
+        image = Image.open(sample_config.prompt)
         image = image.convert("RGB")
 
         t_in = transforms.ToTensor()

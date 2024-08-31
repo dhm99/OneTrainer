@@ -1,9 +1,9 @@
-import customtkinter as ctk
-
 from modules.ui.SampleFrame import SampleFrame
 from modules.util.config.SampleConfig import SampleConfig
 from modules.util.ui import components
 from modules.util.ui.UIState import UIState
+
+import customtkinter as ctk
 
 
 class SampleParamsWindow(ctk.CTkToplevel):
@@ -14,7 +14,7 @@ class SampleParamsWindow(ctk.CTkToplevel):
         self.ui_state = ui_state
 
         self.title("Sample")
-        self.geometry("800x400")
+        self.geometry("800x500")
         self.resizable(True, True)
         self.wait_visibility()
         self.grab_set()

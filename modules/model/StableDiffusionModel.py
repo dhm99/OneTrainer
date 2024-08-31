@@ -1,37 +1,47 @@
 from contextlib import nullcontext
-from uuid import uuid4
 
-import torch
-from diffusers import AutoencoderKL, UNet2DConditionModel, StableDiffusionDepth2ImgPipeline, \
-    StableDiffusionInpaintPipeline, StableDiffusionPipeline, DiffusionPipeline, DDIMScheduler
-from torch import Tensor
-from transformers import CLIPTextModel, CLIPTokenizer, DPTImageProcessor, DPTForDepthEstimation
-
-from modules.model.BaseModel import BaseModel
+from modules.model.BaseModel import BaseModel, BaseModelEmbedding
+from modules.model.util.clip_util import encode_clip
 from modules.module.AdditionalEmbeddingWrapper import AdditionalEmbeddingWrapper
 from modules.module.LoRAModule import LoRAModuleWrapper
-from modules.util.TrainProgress import TrainProgress
 from modules.util.config.TrainConfig import TrainConfig
-from modules.util.convert.rescale_noise_scheduler_to_zero_terminal_snr import \
-    rescale_noise_scheduler_to_zero_terminal_snr
+from modules.util.convert.rescale_noise_scheduler_to_zero_terminal_snr import (
+    rescale_noise_scheduler_to_zero_terminal_snr,
+)
 from modules.util.enum.DataType import DataType
 from modules.util.enum.ModelType import ModelType
 from modules.util.modelSpec.ModelSpec import ModelSpec
+from modules.util.TrainProgress import TrainProgress
+
+import torch
+from torch import Tensor
+
+from diffusers import (
+    AutoencoderKL,
+    DDIMScheduler,
+    DiffusionPipeline,
+    StableDiffusionDepth2ImgPipeline,
+    StableDiffusionInpaintPipeline,
+    StableDiffusionPipeline,
+    UNet2DConditionModel,
+)
+from transformers import CLIPTextModel, CLIPTokenizer, DPTForDepthEstimation, DPTImageProcessor
 
 
-class StableDiffusionModelEmbedding:
+class StableDiffusionModelEmbedding(BaseModelEmbedding):
     def __init__(
             self,
             uuid: str,
             text_encoder_vector: Tensor | None,
             placeholder: str,
     ):
-        token_count = text_encoder_vector.shape[0]
+        super().__init__(
+            uuid=uuid,
+            token_count=text_encoder_vector.shape[0],
+            placeholder=placeholder,
+        )
 
-        self.uuid = uuid
         self.text_encoder_vector = text_encoder_vector
-        self.placeholder = placeholder
-        self.text_tokens = [f"<{uuid4()}>" for _ in range(token_count)]
 
 
 class StableDiffusionModel(BaseModel):
@@ -203,12 +213,34 @@ class StableDiffusionModel(BaseModel):
         rescale_noise_scheduler_to_zero_terminal_snr(self.noise_scheduler)
 
     def add_embeddings_to_prompt(self, prompt: str) -> str:
-        for embedding in self.additional_embeddings:
-            embedding_string = ''.join(embedding.text_tokens)
-            prompt = prompt.replace(embedding.placeholder, embedding_string)
+        return self._add_embeddings_to_prompt(self.additional_embeddings, self.embedding, prompt)
 
-        if self.embedding is not None:
-            embedding_string = ''.join(self.embedding.text_tokens)
-            prompt = prompt.replace(self.embedding.placeholder, embedding_string)
+    def encode_text(
+            self,
+            text: str = None,
+            tokens: Tensor = None,
+            text_encoder_layer_skip: int = 0,
+            text_encoder_output: Tensor | None = None,
+    ):
+        if tokens is None:
+            tokenizer_output = self.tokenizer(
+                text,
+                padding='max_length',
+                truncation=True,
+                max_length=77,
+                return_tensors="pt",
+            )
+            tokens = tokenizer_output.input_ids.to(self.text_encoder.device)
 
-        return prompt
+        text_encoder_output, _ = encode_clip(
+            text_encoder=self.text_encoder,
+            tokens=tokens,
+            default_layer=-1,
+            layer_skip=text_encoder_layer_skip,
+            text_encoder_output=text_encoder_output,
+            add_pooled_output=False,
+            use_attention_mask=False,
+            add_layer_norm=True,
+        )
+
+        return text_encoder_output

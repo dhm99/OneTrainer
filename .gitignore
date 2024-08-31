@@ -6,6 +6,7 @@
 /training_user_settings
 /external
 debug*.py
+debug*.ipynb
 train.bat
 config.json
 *.pyc

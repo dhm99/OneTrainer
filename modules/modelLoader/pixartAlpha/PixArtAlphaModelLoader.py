@@ -1,12 +1,13 @@
+import os
 import traceback
 
-from diffusers import DDIMScheduler, AutoencoderKL, Transformer2DModel
-from transformers import T5Tokenizer, T5EncoderModel
-
 from modules.model.PixArtAlphaModel import PixArtAlphaModel
+from modules.util.enum.ModelType import ModelType
 from modules.util.ModelNames import ModelNames
 from modules.util.ModelWeightDtypes import ModelWeightDtypes
-from modules.util.enum.ModelType import ModelType
+
+from diffusers import AutoencoderKL, DDIMScheduler, Transformer2DModel
+from transformers import T5EncoderModel, T5Tokenizer
 
 
 class PixArtAlphaModelLoader:
@@ -21,7 +22,10 @@ class PixArtAlphaModelLoader:
             base_model_name: str,
             vae_model_name: str,
     ):
-        self.__load_diffusers(model, model_type, weight_dtypes, base_model_name, vae_model_name)
+        if os.path.isfile(os.path.join(base_model_name, "meta.json")):
+            self.__load_diffusers(model, model_type, weight_dtypes, base_model_name, vae_model_name)
+        else:
+            raise Exception("not an internal model")
 
     def __load_diffusers(
             self,

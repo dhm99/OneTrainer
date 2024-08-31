@@ -1,13 +1,14 @@
 from tkinter import filedialog
-from typing import Tuple, Any, Callable
-
-import customtkinter as ctk
-from PIL import Image
-from customtkinter.windows.widgets.scaling import CTkScalingBaseClass
+from typing import Any, Callable, Tuple
 
 from modules.util.enum.TimeUnit import TimeUnit
+from modules.util.path_util import supported_image_extensions
 from modules.util.ui.ToolTip import ToolTip
 from modules.util.ui.UIState import UIState
+
+import customtkinter as ctk
+from customtkinter.windows.widgets.scaling import CTkScalingBaseClass
+from PIL import Image
 
 PAD = 10
 
@@ -81,6 +82,8 @@ def file_entry(
         master, row, column, ui_state: UIState, var_name: str,
         is_output: bool = False,
         path_modifier: Callable[[str], str] = None,
+        allow_model_files: bool = True,
+        allow_image_files: bool = False,
         command: Callable[[str], None] = None,
 ):
     frame = ctk.CTkFrame(master, fg_color="transparent")
@@ -92,20 +95,25 @@ def file_entry(
     entry_component.grid(row=0, column=0, padx=(PAD, PAD), pady=PAD, sticky="new")
 
     def __open_dialog():
+        filetypes = [
+            ("All Files", "*.*"),
+        ]
+
+        if allow_model_files:
+            filetypes.extend([
+                ("Diffusers", "model_index.json"),
+                ("Checkpoint", "*.ckpt *.pt *.bin"),
+                ("Safetensors", "*.safetensors"),
+            ])
+        if allow_image_files:
+            filetypes.extend([
+                ("Image", ' '.join([f"*.{x}" for x in supported_image_extensions()])),
+            ])
+
         if is_output:
-            file_path = filedialog.asksaveasfilename(filetypes=[
-                ("All Files", "*.*"),
-                ("Diffusers", "model_index.json"),
-                ("Checkpoint", "*.ckpt *.pt *.bin"),
-                ("Safetensors", "*.safetensors"),
-            ])
+            file_path = filedialog.asksaveasfilename(filetypes=filetypes)
         else:
-            file_path = filedialog.askopenfilename(filetypes=[
-                ("All Files", "*.*"),
-                ("Diffusers", "model_index.json"),
-                ("Checkpoint", "*.ckpt *.pt *.bin"),
-                ("Safetensors", "*.safetensors"),
-            ])
+            file_path = filedialog.askopenfilename(filetypes=filetypes)
 
         if file_path:
             if path_modifier:
@@ -254,7 +262,7 @@ def options(master, row, column, values, ui_state: UIState, var_name: str, comma
 
 
 def options_adv(master, row, column, values, ui_state: UIState, var_name: str,
-                command: Callable[[str], None] = None, adv_command: Callable[[str], None] = None):
+                command: Callable[[str], None] = None, adv_command: Callable[[], None] = None):
     frame = ctk.CTkFrame(master, fg_color="transparent")
     frame.grid(row=row, column=column, padx=0, pady=0, sticky="new")
 
@@ -406,10 +414,10 @@ def double_progress(master, row, column, label_1, label_2):
 
     def set_1(value, max_value):
         progress_1_component.set(value / max_value)
-        description_1_component.configure(text="{0}/{1}".format(value, max_value))
+        description_1_component.configure(text=f"{value}/{max_value}")
 
     def set_2(value, max_value):
         progress_2_component.set(value / max_value)
-        description_2_component.configure(text="{0}/{1}".format(value, max_value))
+        description_2_component.configure(text=f"{value}/{max_value}")
 
     return set_1, set_2

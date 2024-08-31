@@ -4,9 +4,9 @@ from modules.modelLoader.mixin.InternalModelLoaderMixin import InternalModelLoad
 from modules.modelLoader.mixin.ModelSpecModelLoaderMixin import ModelSpecModelLoaderMixin
 from modules.modelLoader.pixartAlpha.PixArtAlphaEmbeddingLoader import PixArtAlphaEmbeddingLoader
 from modules.modelLoader.pixartAlpha.PixArtAlphaModelLoader import PixArtAlphaModelLoader
+from modules.util.enum.ModelType import ModelType
 from modules.util.ModelNames import ModelNames
 from modules.util.ModelWeightDtypes import ModelWeightDtypes
-from modules.util.enum.ModelType import ModelType
 
 
 class PixArtAlphaFineTuneModelLoader(
@@ -24,6 +24,8 @@ class PixArtAlphaFineTuneModelLoader(
         match model_type:
             case ModelType.PIXART_ALPHA:
                 return "resources/sd_model_spec/pixart_alpha_1.0.json"
+            case ModelType.PIXART_SIGMA:
+                return "resources/sd_model_spec/pixart_sigma_1.0.json"
             case _:
                 return None
 

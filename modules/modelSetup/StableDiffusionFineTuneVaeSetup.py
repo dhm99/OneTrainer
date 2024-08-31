@@ -1,11 +1,11 @@
-import torch
-
 from modules.model.StableDiffusionModel import StableDiffusionModel
 from modules.modelSetup.BaseStableDiffusionSetup import BaseStableDiffusionSetup
-from modules.util.NamedParameterGroup import NamedParameterGroupCollection, NamedParameterGroup
-from modules.util.TrainProgress import TrainProgress
 from modules.util.config.TrainConfig import TrainConfig
+from modules.util.NamedParameterGroup import NamedParameterGroup, NamedParameterGroupCollection
 from modules.util.optimizer_util import init_model_parameters
+from modules.util.TrainProgress import TrainProgress
+
+import torch
 
 
 class StableDiffusionFineTuneVaeSetup(
@@ -32,7 +32,6 @@ class StableDiffusionFineTuneVaeSetup(
 
         parameter_group_collection.add_group(NamedParameterGroup(
             unique_name="vae",
-            display_name="vae",
             parameters=model.vae.decoder.parameters(),
             learning_rate=config.learning_rate,
         ))

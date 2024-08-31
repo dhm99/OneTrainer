@@ -1,13 +1,14 @@
 from modules.util.ModelNames import ModelNames
+
 from util.import_util import script_imports
 
 script_imports()
 
+from modules.util import create
+from modules.util.args.SampleArgs import SampleArgs
 from modules.util.config.SampleConfig import SampleConfig
 from modules.util.enum.ImageFormat import ImageFormat
 from modules.util.enum.TrainingMethod import TrainingMethod
-from modules.util import create
-from modules.util.args.SampleArgs import SampleArgs
 from modules.util.torch_util import default_device
 
 
@@ -16,8 +17,6 @@ def main():
     device = default_device
 
     training_method = TrainingMethod.FINE_TUNE
-    if args.embedding_name is not None:
-        training_method = TrainingMethod.EMBEDDING
 
     model_loader = create.create_model_loader(args.model_type, training_method=training_method)
     model_setup = create.create_model_setup(args.model_type, device, device, training_method=training_method)
@@ -45,14 +44,19 @@ def main():
             {
                 "prompt": args.prompt,
                 "negative_prompt": args.negative_prompt,
-                "height": 512,
-                "width": 512,
+                "height": args.height,
+                "width": args.width,
                 "seed": 42,
+                "text_encoder_1_layer_skip": args.text_encoder_layer_skip,
+                "text_encoder_2_layer_skip": args.text_encoder_layer_skip,
+                "text_encoder_3_layer_skip": args.text_encoder_layer_skip,
+                "sample_inpainting": args.sample_inpainting,
+                "base_image_path": args.base_image_path,
+                "mask_image_path": args.mask_image_path,
             }
         ),
         image_format=ImageFormat.JPG,
         destination=args.destination,
-        text_encoder_layer_skip=args.text_encoder_layer_skip,
     )
 
 

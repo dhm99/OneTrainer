@@ -1,11 +1,11 @@
-import torch
-
 from modules.model.StableDiffusionXLModel import StableDiffusionXLModel
 from modules.modelSetup.BaseStableDiffusionXLSetup import BaseStableDiffusionXLSetup
-from modules.util.NamedParameterGroup import NamedParameterGroupCollection, NamedParameterGroup
-from modules.util.TrainProgress import TrainProgress
 from modules.util.config.TrainConfig import TrainConfig
+from modules.util.NamedParameterGroup import NamedParameterGroupCollection
 from modules.util.optimizer_util import init_model_parameters
+from modules.util.TrainProgress import TrainProgress
+
+import torch
 
 
 class StableDiffusionXLEmbeddingSetup(
@@ -30,25 +30,15 @@ class StableDiffusionXLEmbeddingSetup(
     ) -> NamedParameterGroupCollection:
         parameter_group_collection = NamedParameterGroupCollection()
 
-        for parameter, placeholder, name in zip(model.embedding_wrapper_1.additional_embeddings,
-                                                model.embedding_wrapper_1.additional_embedding_placeholders,
-                                                model.embedding_wrapper_1.additional_embedding_names):
-            parameter_group_collection.add_group(NamedParameterGroup(
-                unique_name=f"embeddings_1/{name}",
-                display_name=f"embeddings_1/{placeholder}",
-                parameters=[parameter],
-                learning_rate=config.embedding_learning_rate,
-            ))
+        if config.text_encoder.train_embedding:
+            self._add_embedding_param_groups(
+                model.embedding_wrapper_1, parameter_group_collection, config.embedding_learning_rate, "embeddings_1"
+            )
 
-        for parameter, placeholder, name in zip(model.embedding_wrapper_2.additional_embeddings,
-                                                model.embedding_wrapper_2.additional_embedding_placeholders,
-                                                model.embedding_wrapper_2.additional_embedding_names):
-            parameter_group_collection.add_group(NamedParameterGroup(
-                unique_name=f"embeddings_2/{name}",
-                display_name=f"embeddings_2/{placeholder}",
-                parameters=[parameter],
-                learning_rate=config.embedding_learning_rate,
-            ))
+        if config.text_encoder_2.train_embedding:
+            self._add_embedding_param_groups(
+                model.embedding_wrapper_2, parameter_group_collection, config.embedding_learning_rate, "embeddings_2"
+            )
 
         return parameter_group_collection
 
@@ -67,11 +57,18 @@ class StableDiffusionXLEmbeddingSetup(
 
         for i, embedding in enumerate(model.additional_embeddings):
             embedding_config = config.additional_embeddings[i]
-            train_embedding = \
+
+            train_embedding_1 = \
                 embedding_config.train \
+                and config.text_encoder.train_embedding \
                 and not self.stop_additional_embedding_training_elapsed(embedding_config, model.train_progress, i)
-            embedding.text_encoder_1_vector.requires_grad_(train_embedding)
-            embedding.text_encoder_2_vector.requires_grad_(train_embedding)
+            embedding.text_encoder_1_vector.requires_grad_(train_embedding_1)
+
+            train_embedding_2 = \
+                embedding_config.train \
+                and config.text_encoder_2.train_embedding \
+                and not self.stop_additional_embedding_training_elapsed(embedding_config, model.train_progress, i)
+            embedding.text_encoder_2_vector.requires_grad_(train_embedding_2)
 
     def setup_model(
             self,
@@ -99,7 +96,8 @@ class StableDiffusionXLEmbeddingSetup(
     ):
         vae_on_train_device = config.align_prop or not config.latent_caching
 
-        model.text_encoder_to(self.train_device)
+        model.text_encoder_1_to(self.train_device if config.text_encoder.train_embedding else self.temp_device)
+        model.text_encoder_2_to(self.train_device if config.text_encoder_2.train_embedding else self.temp_device)
         model.vae_to(self.train_device if vae_on_train_device else self.temp_device)
         model.unet_to(self.train_device)
 

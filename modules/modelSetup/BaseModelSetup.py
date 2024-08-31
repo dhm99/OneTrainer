@@ -1,15 +1,15 @@
 from abc import ABCMeta, abstractmethod
 
+from modules.model.BaseModel import BaseModel
+from modules.util.config.TrainConfig import TrainConfig, TrainEmbeddingConfig
+from modules.util.NamedParameterGroup import NamedParameterGroupCollection
+from modules.util.TimedActionMixin import TimedActionMixin
+from modules.util.TrainProgress import TrainProgress
+
 import torch
 from torch import Tensor
 from torch.optim.lr_scheduler import LRScheduler
 from torch.utils.tensorboard import SummaryWriter
-
-from modules.model.BaseModel import BaseModel
-from modules.util.NamedParameterGroup import NamedParameterGroupCollection
-from modules.util.TimedActionMixin import TimedActionMixin
-from modules.util.TrainProgress import TrainProgress
-from modules.util.config.TrainConfig import TrainConfig, TrainEmbeddingConfig
 
 
 class BaseModelSetup(
@@ -153,6 +153,18 @@ class BaseModelSetup(
             "stop_text_encoder_2_training",
             config.text_encoder_2.stop_training_after,
             config.text_encoder_2.stop_training_after_unit,
+            train_progress,
+        )
+
+    def stop_text_encoder_3_training_elapsed(
+            self,
+            config: TrainConfig,
+            train_progress: TrainProgress,
+    ):
+        return self.single_action_elapsed(
+            "stop_text_encoder_3_training",
+            config.text_encoder_3.stop_training_after,
+            config.text_encoder_3.stop_training_after_unit,
             train_progress,
         )
 

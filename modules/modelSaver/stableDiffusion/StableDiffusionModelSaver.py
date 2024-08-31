@@ -2,15 +2,16 @@ import copy
 import os.path
 from pathlib import Path
 
-import torch
-import yaml
-from safetensors.torch import save_file
-
 from modules.model.StableDiffusionModel import StableDiffusionModel
 from modules.modelSaver.mixin.DtypeModelSaverMixin import DtypeModelSaverMixin
 from modules.util.convert.convert_sd_diffusers_to_ckpt import convert_sd_diffusers_to_ckpt
 from modules.util.enum.ModelFormat import ModelFormat
 from modules.util.enum.ModelType import ModelType
+
+import torch
+
+import yaml
+from safetensors.torch import save_file
 
 
 class StableDiffusionModelSaver(
@@ -25,17 +26,19 @@ class StableDiffusionModelSaver(
     ):
         # Copy the model to cpu by first moving the original model to cpu. This preserves some VRAM.
         pipeline = model.create_pipeline()
-        original_device = pipeline.device
         pipeline.to("cpu")
-        pipeline_copy = copy.deepcopy(pipeline)
-        pipeline.to(original_device)
 
-        pipeline_copy.to(device="cpu", dtype=dtype, silence_dtype_warnings=True)
+        if dtype is not None:
+            save_pipeline = copy.deepcopy(pipeline)
+            save_pipeline.to(device="cpu", dtype=dtype, silence_dtype_warnings=True)
+        else:
+            save_pipeline = pipeline
 
         os.makedirs(Path(destination).absolute(), exist_ok=True)
-        pipeline_copy.save_pretrained(destination)
+        save_pipeline.save_pretrained(destination)
 
-        del pipeline_copy
+        if dtype is not None:
+            del save_pipeline
 
     def __save_ckpt(
             self,
