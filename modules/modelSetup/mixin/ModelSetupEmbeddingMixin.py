@@ -2,8 +2,12 @@ from abc import ABCMeta
 
 import torch
 from torch import Tensor
-from transformers import CLIPTokenizer, CLIPTextModel, CLIPTextModelWithProjection, T5Tokenizer, T5EncoderModel
+
+from transformers import CLIPTextModel, CLIPTextModelWithProjection, CLIPTokenizer, T5EncoderModel, T5Tokenizer
 from transformers.tokenization_utils import Trie
+
+from modules.module.AdditionalEmbeddingWrapper import AdditionalEmbeddingWrapper
+from modules.util.NamedParameterGroup import NamedParameterGroup, NamedParameterGroupCollection
 
 
 class ModelSetupEmbeddingMixin(metaclass=ABCMeta):
@@ -14,12 +18,13 @@ class ModelSetupEmbeddingMixin(metaclass=ABCMeta):
             self,
             tokenizer: CLIPTokenizer | T5Tokenizer,
     ):
-        added_tokens = list(filter(lambda item: not item[1].special, tokenizer._added_tokens_decoder.items()))
-        for key, added_token in added_tokens:
-            tokenizer._added_tokens_decoder.pop(key)
-            tokenizer._added_tokens_encoder.pop(added_token.content)
-        tokenizer.tokens_trie = Trie()
-        tokenizer._update_trie()
+        if tokenizer:
+            added_tokens = list(filter(lambda item: not item[1].special, tokenizer._added_tokens_decoder.items()))
+            for key, added_token in added_tokens:
+                tokenizer._added_tokens_decoder.pop(key)
+                tokenizer._added_tokens_encoder.pop(added_token.content)
+            tokenizer.tokens_trie = Trie()
+            tokenizer._update_trie()
 
     def _create_new_embedding(
             self,
@@ -51,3 +56,21 @@ class ModelSetupEmbeddingMixin(metaclass=ABCMeta):
             embedding: list[str],
     ) -> (Tensor, list[bool]):
         tokenizer.add_tokens(embedding)
+
+    def _add_embedding_param_groups(
+            self,
+            embedding_wrapper: AdditionalEmbeddingWrapper,
+            parameter_group_collection: NamedParameterGroupCollection,
+            embedding_learning_rate: float,
+            prefix: str,
+    ):
+        for parameter, placeholder, name in zip(embedding_wrapper.additional_embeddings,
+                                                embedding_wrapper.additional_embedding_placeholders,
+                                                embedding_wrapper.additional_embedding_names):
+            parameter_group_collection.add_group(NamedParameterGroup(
+                unique_name=f"{prefix}/{name}",
+                display_name=f"{prefix}/{placeholder}",
+                parameters=[parameter],
+                learning_rate=embedding_learning_rate,
+            ))
+            

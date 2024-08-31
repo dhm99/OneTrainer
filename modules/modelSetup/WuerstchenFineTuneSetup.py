@@ -1,11 +1,11 @@
-import torch
-
 from modules.model.WuerstchenModel import WuerstchenModel
 from modules.modelSetup.BaseWuerstchenSetup import BaseWuerstchenSetup
-from modules.util.NamedParameterGroup import NamedParameterGroupCollection, NamedParameterGroup
-from modules.util.TrainProgress import TrainProgress
 from modules.util.config.TrainConfig import TrainConfig
+from modules.util.NamedParameterGroup import NamedParameterGroup, NamedParameterGroupCollection
 from modules.util.optimizer_util import init_model_parameters
+from modules.util.TrainProgress import TrainProgress
+
+import torch
 
 
 class WuerstchenFineTuneSetup(
@@ -33,26 +33,19 @@ class WuerstchenFineTuneSetup(
         if config.text_encoder.train:
             parameter_group_collection.add_group(NamedParameterGroup(
                 unique_name="prior_text_encoder",
-                display_name="prior_text_encoder",
                 parameters=model.prior_text_encoder.parameters(),
                 learning_rate=config.text_encoder.learning_rate,
             ))
 
         if config.train_any_embedding():
-            for parameter, placeholder, name in zip(model.prior_embedding_wrapper.additional_embeddings,
-                                                    model.prior_embedding_wrapper.additional_embedding_placeholders,
-                                                    model.prior_embedding_wrapper.additional_embedding_names):
-                parameter_group_collection.add_group(NamedParameterGroup(
-                    unique_name=f"prior_embeddings/{name}",
-                    display_name=f"prior_embeddings/{placeholder}",
-                    parameters=[parameter],
-                    learning_rate=config.embedding_learning_rate,
-                ))
+            self._add_embedding_param_groups(
+                model.prior_embedding_wrapper, parameter_group_collection, config.embedding_learning_rate,
+                "prior_embeddings"
+            )
 
         if config.prior.train:
             parameter_group_collection.add_group(NamedParameterGroup(
                 unique_name="prior_prior",
-                display_name="prior_prior",
                 parameters=model.prior_prior.parameters(),
                 learning_rate=config.prior.learning_rate,
             ))

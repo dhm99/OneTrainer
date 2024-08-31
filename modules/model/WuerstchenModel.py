@@ -1,24 +1,24 @@
 from contextlib import nullcontext
-from uuid import uuid4
 
-import torch
-import torchvision
-from diffusers import DiffusionPipeline, DDPMWuerstchenScheduler, WuerstchenCombinedPipeline, ModelMixin, ConfigMixin
-from diffusers.configuration_utils import register_to_config
-from diffusers.models import StableCascadeUNet
-from diffusers.pipelines.stable_cascade import StableCascadeCombinedPipeline
-from diffusers.pipelines.wuerstchen import WuerstchenDiffNeXt, PaellaVQModel, WuerstchenPrior
-from torch import nn, Tensor
-from transformers import CLIPTextModel, CLIPTokenizer, CLIPTextModelWithProjection
-
-from modules.model.BaseModel import BaseModel
+from modules.model.BaseModel import BaseModel, BaseModelEmbedding
 from modules.module.AdditionalEmbeddingWrapper import AdditionalEmbeddingWrapper
 from modules.module.LoRAModule import LoRAModuleWrapper
-from modules.util.TrainProgress import TrainProgress
 from modules.util.config.TrainConfig import TrainConfig
 from modules.util.enum.DataType import DataType
 from modules.util.enum.ModelType import ModelType
 from modules.util.modelSpec.ModelSpec import ModelSpec
+from modules.util.TrainProgress import TrainProgress
+
+import torch
+import torchvision
+from torch import Tensor, nn
+
+from diffusers import ConfigMixin, DDPMWuerstchenScheduler, DiffusionPipeline, ModelMixin, WuerstchenCombinedPipeline
+from diffusers.configuration_utils import register_to_config
+from diffusers.models import StableCascadeUNet
+from diffusers.pipelines.stable_cascade import StableCascadeCombinedPipeline
+from diffusers.pipelines.wuerstchen import PaellaVQModel, WuerstchenDiffNeXt, WuerstchenPrior
+from transformers import CLIPTextModel, CLIPTextModelWithProjection, CLIPTokenizer
 
 
 class WuerstchenEfficientNetEncoder(ModelMixin, ConfigMixin):
@@ -46,19 +46,20 @@ class WuerstchenEfficientNetEncoder(ModelMixin, ConfigMixin):
         return self.mapper(self.backbone(x))
 
 
-class WuerstchenModelEmbedding:
+class WuerstchenModelEmbedding(BaseModelEmbedding):
     def __init__(
             self,
             uuid: str,
             prior_text_encoder_vector: Tensor,
             placeholder: str,
     ):
-        token_count = prior_text_encoder_vector.shape[0]
+        super().__init__(
+            uuid=uuid,
+            token_count=prior_text_encoder_vector.shape[0],
+            placeholder=placeholder,
+        )
 
-        self.uuid = uuid
         self.prior_text_encoder_vector = prior_text_encoder_vector
-        self.placeholder = placeholder
-        self.text_tokens = [f"<{uuid4()}>" for _ in range(token_count)]
 
 
 class WuerstchenModel(BaseModel):
@@ -226,12 +227,46 @@ class WuerstchenModel(BaseModel):
             )
 
     def add_embeddings_to_prompt(self, prompt: str) -> str:
-        for embedding in self.additional_embeddings:
-            embedding_string = ''.join(embedding.text_tokens)
-            prompt = prompt.replace(embedding.placeholder, embedding_string)
+        return self._add_embeddings_to_prompt(self.additional_embeddings, self.embedding, prompt)
 
-        if self.embedding is not None:
-            embedding_string = ''.join(self.embedding.text_tokens)
-            prompt = prompt.replace(self.embedding.placeholder, embedding_string)
+    def encode_text(
+            self,
+            text: str = None,
+            tokens: Tensor = None,
+            tokens_mask: Tensor = None,
+            text_encoder_layer_skip: int = 0,
+            text_encoder_output: Tensor | None = None,
+            pooled_text_encoder_output: Tensor | None = None,
+    ) -> tuple[Tensor, Tensor]:
+        if tokens is None and text is not None:
+            tokenizer_output = self.prior_tokenizer(
+                text,
+                padding='max_length',
+                truncation=True,
+                max_length=77,
+                return_tensors="pt",
+            )
+            tokens = tokenizer_output.input_ids.to(self.prior_text_encoder.device)
+            tokens_mask = tokenizer_output.attention_mask.to(self.prior_text_encoder.device)
 
-        return prompt
+        if text_encoder_output is None:
+            text_encoder_output = self.prior_text_encoder(
+                tokens,
+                attention_mask=tokens_mask,
+                output_hidden_states=True,
+                return_dict=True,
+            )
+            if self.model_type.is_wuerstchen_v2():
+                final_layer_norm = self.prior_text_encoder.text_model.final_layer_norm
+                pooled_text_encoder_output = None
+                text_encoder_output = final_layer_norm(
+                    text_encoder_output.hidden_states[-(1 + text_encoder_layer_skip)]
+                )
+            if self.model_type.is_stable_cascade():
+                pooled_text_encoder_output = text_encoder_output.text_embeds.unsqueeze(1)
+                text_encoder_output = text_encoder_output.hidden_states[-(1 + text_encoder_layer_skip)]
+        else:
+            if self.model_type.is_stable_cascade():
+                pooled_text_encoder_output = pooled_text_encoder_output.unsqueeze(1)
+
+        return text_encoder_output, pooled_text_encoder_output

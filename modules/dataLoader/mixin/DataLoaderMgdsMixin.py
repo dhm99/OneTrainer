@@ -1,13 +1,14 @@
 import json
 from abc import ABCMeta
 
-import torch
-from mgds.MGDS import MGDS
-from mgds.PipelineModule import PipelineState
-
-from modules.util.TrainProgress import TrainProgress
 from modules.util.config.ConceptConfig import ConceptConfig
 from modules.util.config.TrainConfig import TrainConfig
+from modules.util.TrainProgress import TrainProgress
+
+import torch
+
+from mgds.MGDS import MGDS
+from mgds.PipelineModule import PipelineState
 
 
 class DataLoaderMgdsMixin(metaclass=ABCMeta):
@@ -27,8 +28,6 @@ class DataLoaderMgdsMixin(metaclass=ABCMeta):
                     concepts[i] = ConceptConfig.default_values().from_dict(concepts[i]).to_dict()
 
         settings = {
-            "enable_random_circular_mask_shrink": config.circular_mask_generation,
-            "enable_random_mask_rotate_crop": config.random_rotate_and_crop,
             "target_resolution": config.resolution,
         }
 

@@ -1,18 +1,20 @@
 import json
+import os.path
 import traceback
+
+from modules.model.WuerstchenModel import WuerstchenEfficientNetEncoder, WuerstchenModel
+from modules.util.convert.convert_stable_cascade_ckpt_to_diffusers import convert_stable_cascade_ckpt_to_diffusers
+from modules.util.enum.ModelType import ModelType
+from modules.util.ModelNames import ModelNames
+from modules.util.ModelWeightDtypes import ModelWeightDtypes
 
 from diffusers import DDPMWuerstchenScheduler
 from diffusers.models import StableCascadeUNet
-from diffusers.pipelines.wuerstchen import WuerstchenDiffNeXt, PaellaVQModel, WuerstchenPrior
+from diffusers.pipelines.wuerstchen import PaellaVQModel, WuerstchenDiffNeXt, WuerstchenPrior
+from transformers import CLIPTextModel, CLIPTextModelWithProjection, CLIPTokenizer
+
 from safetensors import safe_open
 from safetensors.torch import load_file
-from transformers import CLIPTokenizer, CLIPTextModel, CLIPTextModelWithProjection
-
-from modules.model.WuerstchenModel import WuerstchenModel, WuerstchenEfficientNetEncoder
-from modules.util.ModelNames import ModelNames
-from modules.util.ModelWeightDtypes import ModelWeightDtypes
-from modules.util.convert.convert_stable_cascade_ckpt_to_diffusers import convert_stable_cascade_ckpt_to_diffusers
-from modules.util.enum.ModelType import ModelType
 
 
 class WuerstchenModelLoader:
@@ -28,15 +30,18 @@ class WuerstchenModelLoader:
             effnet_encoder_model_name: str,
             decoder_model_name: str,
     ):
-        self.__load_diffusers(
-            model,
-            model_type,
-            weight_dtypes,
-            prior_model_name,
-            "",  # pass an empty prior name, so it's always loaded from the backup
-            effnet_encoder_model_name,
-            decoder_model_name,
-        )
+        if os.path.isfile(os.path.join(prior_model_name, "meta.json")):
+            self.__load_diffusers(
+                model,
+                model_type,
+                weight_dtypes,
+                prior_model_name,
+                "",  # pass an empty prior name, so it's always loaded from the backup
+                effnet_encoder_model_name,
+                decoder_model_name,
+            )
+        else:
+            raise Exception("not an internal model")
 
     def __load_diffusers(
             self,
@@ -47,7 +52,7 @@ class WuerstchenModelLoader:
             prior_prior_model_name: str,
             effnet_encoder_model_name: str,
             decoder_model_name: str,
-    ) -> WuerstchenModel | None:
+    ):
         if model_type.is_wuerstchen_v2():
             decoder_tokenizer = CLIPTokenizer.from_pretrained(
                 decoder_model_name,

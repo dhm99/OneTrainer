@@ -1,34 +1,40 @@
 from abc import ABCMeta
 from random import Random
 
-import torch
-from diffusers.models.attention_processor import AttnProcessor, XFormersAttnProcessor, AttnProcessor2_0, Attention
-from diffusers.utils import is_xformers_available
-from torch import Tensor
-from torch.utils.checkpoint import checkpoint
-
 from modules.model.PixArtAlphaModel import PixArtAlphaModel, PixArtAlphaModelEmbedding
 from modules.modelSetup.BaseModelSetup import BaseModelSetup
 from modules.modelSetup.mixin.ModelSetupDebugMixin import ModelSetupDebugMixin
 from modules.modelSetup.mixin.ModelSetupDiffusionLossMixin import ModelSetupDiffusionLossMixin
-from modules.modelSetup.mixin.ModelSetupDiffusionNoiseMixin import ModelSetupDiffusionNoiseMixin
+from modules.modelSetup.mixin.ModelSetupDiffusionMixin import ModelSetupDiffusionMixin
 from modules.modelSetup.mixin.ModelSetupEmbeddingMixin import ModelSetupEmbeddingMixin
-from modules.modelSetup.stableDiffusion.checkpointing_util import create_checkpointed_forward, \
-    enable_checkpointing_for_t5_encoder_layers, enable_checkpointing_for_transformer_blocks
+from modules.modelSetup.mixin.ModelSetupNoiseMixin import ModelSetupNoiseMixin
 from modules.module.AdditionalEmbeddingWrapper import AdditionalEmbeddingWrapper
-from modules.util.TrainProgress import TrainProgress
+from modules.util.checkpointing_util import (
+    create_checkpointed_forward,
+    enable_checkpointing_for_t5_encoder_layers,
+    enable_checkpointing_for_transformer_blocks,
+)
 from modules.util.config.TrainConfig import TrainConfig
 from modules.util.conv_util import apply_circular_padding_to_conv2d
 from modules.util.dtype_util import create_autocast_context, disable_fp16_autocast_context
 from modules.util.enum.AttentionMechanism import AttentionMechanism
 from modules.util.enum.TrainingMethod import TrainingMethod
+from modules.util.TrainProgress import TrainProgress
+
+import torch
+from torch import Tensor
+from torch.utils.checkpoint import checkpoint
+
+from diffusers.models.attention_processor import Attention, AttnProcessor, AttnProcessor2_0, XFormersAttnProcessor
+from diffusers.utils import is_xformers_available
 
 
 class BasePixArtAlphaSetup(
     BaseModelSetup,
     ModelSetupDiffusionLossMixin,
     ModelSetupDebugMixin,
-    ModelSetupDiffusionNoiseMixin,
+    ModelSetupNoiseMixin,
+    ModelSetupDiffusionMixin,
     ModelSetupEmbeddingMixin,
     metaclass=ABCMeta,
 ):
@@ -87,7 +93,7 @@ class BasePixArtAlphaSetup(
             config.weight_dtypes().text_encoder,
             config.weight_dtypes().vae,
             config.weight_dtypes().lora if config.training_method == TrainingMethod.LORA else None,
-            config.weight_dtypes().embedding if config.training_method == TrainingMethod.EMBEDDING else None,
+            config.weight_dtypes().embedding if config.train_any_embedding() else None,
         ], config.enable_autocast_cache)
 
         model.text_encoder_autocast_context, model.text_encoder_train_dtype = disable_fp16_autocast_context(
@@ -97,7 +103,7 @@ class BasePixArtAlphaSetup(
             [
                 config.weight_dtypes().text_encoder,
                 config.weight_dtypes().lora if config.training_method == TrainingMethod.LORA else None,
-                config.weight_dtypes().embedding if config.training_method == TrainingMethod.EMBEDDING else None,
+                config.weight_dtypes().embedding if config.train_any_embedding() else None,
             ],
             config.enable_autocast_cache,
         )
@@ -172,42 +178,6 @@ class BasePixArtAlphaSetup(
         )
         model.embedding_wrapper.hook_to_module()
 
-    def __encode_text(
-            self,
-            model: PixArtAlphaModel,
-            config: TrainConfig,
-            tokens: Tensor = None,
-            attention_mask: Tensor = None,
-            text: str = None,
-    ):
-        if tokens is None:
-            tokenizer_output = model.tokenizer(
-                text,
-                padding='max_length',
-                truncation=True,
-                max_length=120,
-                return_tensors="pt",
-            )
-            tokens = tokenizer_output.input_ids.to(model.text_encoder.device)
-
-            attention_mask = tokenizer_output.attention_mask
-            attention_mask = attention_mask.to(model.text_encoder.device)
-
-        with model.text_encoder_autocast_context:
-            text_encoder_output = model.text_encoder(
-                tokens,
-                attention_mask=attention_mask,
-                output_hidden_states=True,
-                return_dict=True,
-            )
-            text_encoder_output.hidden_states = text_encoder_output.hidden_states[:-1]
-            final_layer_norm = model.text_encoder.encoder.final_layer_norm
-            prompt_embeds = final_layer_norm(
-                text_encoder_output.hidden_states[-(1 + config.text_encoder_layer_skip)]
-            )
-
-        return prompt_embeds, attention_mask
-
     def predict(
             self,
             model: PixArtAlphaModel,
@@ -226,16 +196,13 @@ class BasePixArtAlphaSetup(
 
             vae_scaling_factor = model.vae.config['scaling_factor']
 
-            if config.text_encoder.train or config.train_any_embedding():
-                text_encoder_output, text_encoder_attention_mask = self.__encode_text(
-                    model,
-                    config,
-                    tokens=batch['tokens'],
-                    attention_mask=batch['tokens_mask'],
-                )
-            else:
-                text_encoder_output = batch['text_encoder_hidden_state']
-                text_encoder_attention_mask = batch['tokens_mask']
+            text_encoder_output, text_encoder_attention_mask = model.encode_text(
+                tokens=batch['tokens'],
+                text_encoder_layer_skip=config.text_encoder_layer_skip,
+                text_encoder_output=batch[
+                    'text_encoder_hidden_state'] if not config.train_text_encoder_or_embedding() else None,
+                attention_mask=batch['tokens_mask'],
+            )
 
             latent_image = batch['latent_image']
             scaled_latent_image = latent_image * vae_scaling_factor
@@ -250,10 +217,9 @@ class BasePixArtAlphaSetup(
                 dummy = torch.zeros((1,), device=self.train_device)
                 dummy.requires_grad_(True)
 
-                negative_text_encoder_output, negative_text_encoder_attention_mask = self.__encode_text(
-                    model,
-                    config,
+                negative_text_encoder_output, negative_text_encoder_attention_mask = model.encode_text(
                     text="",
+                    text_encoder_layer_skip=config.text_encoder_layer_skip,
                 )
                 negative_text_encoder_output = negative_text_encoder_output \
                     .expand((scaled_latent_image.shape[0], -1, -1))
@@ -353,12 +319,11 @@ class BasePixArtAlphaSetup(
                 }
             else:
                 timestep = self._get_timestep_discrete(
-                    model.noise_scheduler,
+                    model.noise_scheduler.config['num_train_timesteps'],
                     deterministic,
                     generator,
                     scaled_latent_image.shape[0],
                     config,
-                    train_progress.global_step,
                 )
 
                 scaled_noisy_latent_image = self._add_noise_discrete(

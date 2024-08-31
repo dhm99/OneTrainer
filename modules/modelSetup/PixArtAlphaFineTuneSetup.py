@@ -1,11 +1,11 @@
-import torch
-
 from modules.model.PixArtAlphaModel import PixArtAlphaModel
 from modules.modelSetup.BasePixArtAlphaSetup import BasePixArtAlphaSetup
-from modules.util.NamedParameterGroup import NamedParameterGroupCollection, NamedParameterGroup
-from modules.util.TrainProgress import TrainProgress
 from modules.util.config.TrainConfig import TrainConfig
+from modules.util.NamedParameterGroup import NamedParameterGroup, NamedParameterGroupCollection
 from modules.util.optimizer_util import init_model_parameters
+from modules.util.TrainProgress import TrainProgress
+
+import torch
 
 
 class PixArtAlphaFineTuneSetup(
@@ -33,26 +33,18 @@ class PixArtAlphaFineTuneSetup(
         if config.text_encoder.train:
             parameter_group_collection.add_group(NamedParameterGroup(
                 unique_name="text_encoder",
-                display_name="text_encoder",
                 parameters=model.text_encoder.parameters(),
                 learning_rate=config.text_encoder.learning_rate,
             ))
 
         if config.train_any_embedding():
-            for parameter, placeholder, name in zip(model.embedding_wrapper.additional_embeddings,
-                                                    model.embedding_wrapper.additional_embedding_placeholders,
-                                                    model.embedding_wrapper.additional_embedding_names):
-                parameter_group_collection.add_group(NamedParameterGroup(
-                    unique_name=f"embeddings/{name}",
-                    display_name=f"embeddings/{placeholder}",
-                    parameters=[parameter],
-                    learning_rate=config.embedding_learning_rate,
-                ))
+            self._add_embedding_param_groups(
+                model.embedding_wrapper, parameter_group_collection, config.embedding_learning_rate, "embeddings"
+            )
 
         if config.prior.train:
             parameter_group_collection.add_group(NamedParameterGroup(
                 unique_name="transformer",
-                display_name="transformer",
                 parameters=model.transformer.parameters(),
                 learning_rate=config.prior.learning_rate,
             ))

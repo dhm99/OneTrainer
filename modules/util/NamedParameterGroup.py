@@ -1,22 +1,22 @@
 from functools import cached_property
-
-from torch.nn import Parameter
-from typing_extensions import Iterable
+from typing import Iterable
 
 from modules.util.config.TrainConfig import TrainConfig
 from modules.util.enum.LearningRateScaler import LearningRateScaler
+
+from torch.nn import Parameter
 
 
 class NamedParameterGroup:
     def __init__(
             self,
             unique_name: str,
-            display_name: str,
             parameters: Iterable[Parameter],
             learning_rate: float,
+            display_name: str | None = None,
     ):
         self.unique_name = unique_name
-        self.display_name = display_name
+        self.display_name = display_name if display_name is not None else unique_name
         self.parameters = list(parameters)
         self.learning_rate = learning_rate
 

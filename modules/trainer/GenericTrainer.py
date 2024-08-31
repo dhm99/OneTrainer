@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import shutil
@@ -7,14 +8,6 @@ import traceback
 from pathlib import Path
 from typing import Callable
 
-import torch
-from PIL.Image import Image
-from torch import Tensor, nn
-from torch.nn import Parameter
-from torch.utils.tensorboard import SummaryWriter
-from torchvision.transforms.functional import pil_to_tensor
-from tqdm import tqdm
-
 from modules.dataLoader.BaseDataLoader import BaseDataLoader
 from modules.model.BaseModel import BaseModel
 from modules.modelLoader.BaseModelLoader import BaseModelLoader
@@ -22,19 +15,29 @@ from modules.modelSampler.BaseModelSampler import BaseModelSampler
 from modules.modelSaver.BaseModelSaver import BaseModelSaver
 from modules.modelSetup.BaseModelSetup import BaseModelSetup
 from modules.trainer.BaseTrainer import BaseTrainer
-from modules.util import path_util, create
-from modules.util.TrainProgress import TrainProgress
+from modules.util import create, path_util
 from modules.util.callbacks.TrainCallbacks import TrainCallbacks
 from modules.util.commands.TrainCommands import TrainCommands
 from modules.util.config.SampleConfig import SampleConfig
 from modules.util.config.TrainConfig import TrainConfig
-from modules.util.dtype_util import enable_grad_scaling, create_grad_scaler
+from modules.util.dtype_util import create_grad_scaler, enable_grad_scaling
 from modules.util.enum.ImageFormat import ImageFormat
 from modules.util.enum.ModelFormat import ModelFormat
 from modules.util.enum.TimeUnit import TimeUnit
 from modules.util.enum.TrainingMethod import TrainingMethod
 from modules.util.time_util import get_string_timestamp
 from modules.util.torch_util import torch_gc
+from modules.util.TrainProgress import TrainProgress
+
+import torch
+from torch import Tensor, nn
+from torch.nn import Parameter
+from torch.utils.hooks import RemovableHandle
+from torch.utils.tensorboard import SummaryWriter
+from torchvision.transforms.functional import pil_to_tensor
+
+from PIL.Image import Image
+from tqdm import tqdm
 
 
 class GenericTrainer(BaseTrainer):
@@ -52,6 +55,8 @@ class GenericTrainer(BaseTrainer):
 
     tensorboard_subprocess: subprocess.Popen
     tensorboard: SummaryWriter
+
+    grad_hook_handles: list[RemovableHandle]
 
     def __init__(self, config: TrainConfig, callbacks: TrainCallbacks, commands: TrainCommands):
         super(GenericTrainer, self).__init__(config, callbacks, commands)
@@ -77,6 +82,8 @@ class GenericTrainer(BaseTrainer):
             self.tensorboard_subprocess = subprocess.Popen(tensorboard_args)
 
         self.one_step_trained = False
+
+        self.grad_hook_handles = []
 
     def start(self):
         if self.config.clear_cache_before_training and self.config.latent_caching:
@@ -107,7 +114,7 @@ class GenericTrainer(BaseTrainer):
 
                 print(f"Continuing training from backup '{last_backup_path}'...")
             else:
-                print(f"No backup found, continuing without backup...")
+                print("No backup found, continuing without backup...")
 
         self.callbacks.on_update_status("loading the model")
         self.model = self.model_loader.load(
@@ -177,10 +184,10 @@ class GenericTrainer(BaseTrainer):
                 dirpath = os.path.join(backup_dirpath, dirpath)
                 try:
                     shutil.rmtree(dirpath)
-                except Exception as e:
+                except Exception:
                     print(f"Could not delete old rolling backup {dirpath}")
 
-        return None
+        return
 
     def __enqueue_sample_during_training(self, fun: Callable):
         self.sample_queue.append(fun)
@@ -194,15 +201,15 @@ class GenericTrainer(BaseTrainer):
             self,
             train_progress: TrainProgress,
             train_device: torch.device,
-            sample_params_list: list[SampleConfig],
+            sample_config_list: list[SampleConfig],
             folder_postfix: str = "",
             image_format: ImageFormat = ImageFormat.JPG,
             is_custom_sample: bool = False,
     ):
-        for i, sample_params in enumerate(sample_params_list):
-            if sample_params.enabled:
+        for i, sample_config in enumerate(sample_config_list):
+            if sample_config.enabled:
                 try:
-                    safe_prompt = path_util.safe_filename(sample_params.prompt)
+                    safe_prompt = path_util.safe_filename(sample_config.prompt)
 
                     if is_custom_sample:
                         sample_dir = os.path.join(
@@ -237,12 +244,13 @@ class GenericTrainer(BaseTrainer):
                     self.model.to(self.temp_device)
                     self.model.eval()
 
+                    sample_config = copy.copy(sample_config)
+                    sample_config.from_train_config(self.config)
+
                     self.model_sampler.sample(
-                        sample_params=sample_params,
+                        sample_config=sample_config,
                         destination=sample_path,
                         image_format=self.config.sample_image_format,
-                        text_encoder_layer_skip=self.config.text_encoder_layer_skip,
-                        force_last_timestep=self.config.rescale_noise_scheduler_to_zero_terminal_snr,
                         on_sample=on_sample,
                         on_update_progress=on_update_progress,
                     )
@@ -285,7 +293,7 @@ class GenericTrainer(BaseTrainer):
         self.__sample_loop(
             train_progress=train_progress,
             train_device=train_device,
-            sample_params_list=sample_params_list,
+            sample_config_list=sample_params_list,
             image_format=self.config.sample_image_format,
             is_custom_sample=is_custom_sample,
         )
@@ -298,7 +306,7 @@ class GenericTrainer(BaseTrainer):
             self.__sample_loop(
                 train_progress=train_progress,
                 train_device=train_device,
-                sample_params_list=sample_params_list,
+                sample_config_list=sample_params_list,
                 image_format=self.config.sample_image_format,
                 folder_postfix=" - no-ema",
             )
@@ -321,8 +329,10 @@ class GenericTrainer(BaseTrainer):
 
         with open(args_path, "w") as f:
             json.dump(self.config.to_dict(), f, indent=4)
-        shutil.copy2(self.config.concept_file_name, concepts_path)
-        shutil.copy2(self.config.sample_definition_file_name, samples_path)
+        if os.path.isfile(self.config.concept_file_name):
+            shutil.copy2(self.config.concept_file_name, concepts_path)
+        if os.path.isfile(self.config.sample_definition_file_name):
+            shutil.copy2(self.config.sample_definition_file_name, samples_path)
 
     def backup(self, train_progress: TrainProgress):
         torch_gc()
@@ -358,7 +368,6 @@ class GenericTrainer(BaseTrainer):
             except:
                 traceback.print_exc()
                 print("Could not delete partial backup")
-                pass
         finally:
             if self.config.rolling_backup:
                 self.__prune_backups(self.config.rolling_backup_count)
@@ -410,7 +419,6 @@ class GenericTrainer(BaseTrainer):
             except:
                 traceback.print_exc()
                 print("Could not delete partial save")
-                pass
         finally:
             if self.model.ema:
                 self.model.ema.copy_temp_to(self.parameters)
@@ -418,7 +426,9 @@ class GenericTrainer(BaseTrainer):
         torch_gc()
 
     def __needs_sample(self, train_progress: TrainProgress):
-        return self.repeating_action_needed("sample", self.config.sample_after, self.config.sample_after_unit, train_progress)
+        return self.repeating_action_needed(
+            "sample", self.config.sample_after, self.config.sample_after_unit, train_progress
+        )
 
     def __needs_backup(self, train_progress: TrainProgress):
         return self.repeating_action_needed(
@@ -450,8 +460,8 @@ class GenericTrainer(BaseTrainer):
                     if parameter.requires_grad:
                         if scaler:
                             def __grad_hook(tensor: Tensor, param_group=param_group, i=i):
-                                nn.utils.clip_grad_norm_(tensor, 1)
                                 scaler.unscale_parameter_(tensor, self.model.optimizer)
+                                nn.utils.clip_grad_norm_(tensor, 1)
                                 scaler.maybe_opt_step_parameter(tensor, param_group, i, self.model.optimizer)
                                 tensor.grad = None
                         else:
@@ -460,7 +470,8 @@ class GenericTrainer(BaseTrainer):
                                 self.model.optimizer.step_parameter(tensor, param_group, i)
                                 tensor.grad = None
 
-                        parameter.register_post_accumulate_grad_hook(__grad_hook)
+                        handle = parameter.register_post_accumulate_grad_hook(__grad_hook)
+                        self.grad_hook_handles.append(handle)
 
     def __before_eval(self):
         # Special case for schedule-free optimizers, which need eval()
@@ -556,7 +567,7 @@ class GenericTrainer(BaseTrainer):
                 if self.__needs_backup(train_progress) or self.commands.get_and_reset_backup_command():
                     self.backup(train_progress)
 
-                if self.__needs_save(train_progress):
+                if self.__needs_save(train_progress) or self.commands.get_and_reset_save_command():
                     self.save(train_progress)
 
                 self.callbacks.on_update_status("training")
@@ -676,3 +687,6 @@ class GenericTrainer(BaseTrainer):
 
         if self.config.tensorboard:
             self.tensorboard_subprocess.kill()
+
+        for handle in self.grad_hook_handles:
+            handle.remove()

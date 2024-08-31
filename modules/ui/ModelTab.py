@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import customtkinter as ctk
-
 from modules.util.config.TrainConfig import TrainConfig
 from modules.util.enum.ConfigPart import ConfigPart
 from modules.util.enum.DataType import DataType
@@ -9,6 +7,8 @@ from modules.util.enum.ModelFormat import ModelFormat
 from modules.util.enum.TrainingMethod import TrainingMethod
 from modules.util.ui import components
 from modules.util.ui.UIState import UIState
+
+import customtkinter as ctk
 
 
 class ModelTab:
@@ -42,11 +42,13 @@ class ModelTab:
 
         if self.train_config.model_type.is_stable_diffusion():
             self.__setup_stable_diffusion_ui()
+        if self.train_config.model_type.is_stable_diffusion_3():
+            self.__setup_stable_diffusion_3_ui()
         elif self.train_config.model_type.is_stable_diffusion_xl():
             self.__setup_stable_diffusion_xl_ui()
         elif self.train_config.model_type.is_wuerstchen():
             self.__setup_wuerstchen_ui()
-        elif self.train_config.model_type.is_pixart_alpha():
+        elif self.train_config.model_type.is_pixart():
             self.__setup_pixart_alpha_ui()
 
     def __setup_stable_diffusion_ui(self):
@@ -56,6 +58,27 @@ class ModelTab:
             row,
             has_unet=True,
             has_text_encoder=True,
+            has_vae=True,
+        )
+        row = self.__create_output_components(
+            row,
+            allow_safetensors=True,
+            allow_diffusers=self.train_config.training_method in [
+                TrainingMethod.FINE_TUNE,
+                TrainingMethod.FINE_TUNE_VAE,
+            ],
+            allow_checkpoint=True,
+        )
+
+    def __setup_stable_diffusion_3_ui(self):
+        row = 0
+        row = self.__create_base_dtype_components(row)
+        row = self.__create_base_components(
+            row,
+            has_prior=True,
+            has_text_encoder_1=True,
+            has_text_encoder_2=True,
+            has_text_encoder_3=True,
             has_vae=True,
         )
         row = self.__create_output_components(
@@ -152,6 +175,7 @@ class ModelTab:
             has_text_encoder: bool = False,
             has_text_encoder_1: bool = False,
             has_text_encoder_2: bool = False,
+            has_text_encoder_3: bool = False,
             has_vae: bool = False,
     ) -> int:
         if has_unet:
@@ -230,6 +254,20 @@ class ModelTab:
                 ("float16", DataType.FLOAT_16),
                 ("float8", DataType.FLOAT_8),
             ], self.ui_state, "text_encoder_2.weight_dtype")
+
+            row += 1
+
+        if has_text_encoder_3:
+            # text encoder 3 weight dtype
+            components.label(self.scroll_frame, row, 3, "Override Text Encoder 3 Data Type",
+                             tooltip="Overrides the text encoder 3 weight data type")
+            components.options_kv(self.scroll_frame, row, 4, [
+                ("", DataType.NONE),
+                ("float32", DataType.FLOAT_32),
+                ("bfloat16", DataType.BFLOAT_16),
+                ("float16", DataType.FLOAT_16),
+                ("float8", DataType.FLOAT_8),
+            ], self.ui_state, "text_encoder_3.weight_dtype")
 
             row += 1
 

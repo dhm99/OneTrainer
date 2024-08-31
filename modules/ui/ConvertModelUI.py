@@ -2,19 +2,18 @@ import traceback
 from pathlib import Path
 from uuid import uuid4
 
-import customtkinter as ctk
-import torch
-
 from modules.util import create
-from modules.util.ModelNames import ModelNames, EmbeddingName
 from modules.util.args.ConvertModelArgs import ConvertModelArgs
 from modules.util.enum.DataType import DataType
 from modules.util.enum.ModelFormat import ModelFormat
 from modules.util.enum.ModelType import ModelType
 from modules.util.enum.TrainingMethod import TrainingMethod
+from modules.util.ModelNames import EmbeddingName, ModelNames
+from modules.util.torch_util import torch_gc
 from modules.util.ui import components
 from modules.util.ui.UIState import UIState
-from modules.util.torch_util import torch_gc
+
+import customtkinter as ctk
 
 
 class ConvertModelUI(ctk.CTkToplevel):
@@ -24,7 +23,7 @@ class ConvertModelUI(ctk.CTkToplevel):
 
         self.title("Convert models")
         self.geometry("550x350")
-        self.resizable(False, False)
+        self.resizable(True, True)
         self.wait_visibility()
         self.focus_set()
 
@@ -53,8 +52,11 @@ class ConvertModelUI(ctk.CTkToplevel):
             ("Stable Diffusion 2.0 Inpainting", ModelType.STABLE_DIFFUSION_20_INPAINTING),
             ("Stable Diffusion 2.1", ModelType.STABLE_DIFFUSION_21),
             ("Stable Diffusion XL 1.0 Base", ModelType.STABLE_DIFFUSION_XL_10_BASE),
+            ("Stable Diffusion XL 1.0 Base Inpainting", ModelType.STABLE_DIFFUSION_XL_10_BASE_INPAINTING),
             ("Wuerstchen v2", ModelType.WUERSTCHEN_2),
+            ("Stable Cascade", ModelType.STABLE_CASCADE_1),
             ("PixArt Alpha", ModelType.PIXART_ALPHA),
+            ("PixArt Sigma", ModelType.PIXART_SIGMA),
         ], self.ui_state, "model_type")
 
         # training method

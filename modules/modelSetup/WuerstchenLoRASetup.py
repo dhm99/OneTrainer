@@ -1,12 +1,24 @@
-import torch
-
 from modules.model.WuerstchenModel import WuerstchenModel
 from modules.modelSetup.BaseWuerstchenSetup import BaseWuerstchenSetup
 from modules.module.LoRAModule import LoRAModuleWrapper
-from modules.util.NamedParameterGroup import NamedParameterGroupCollection, NamedParameterGroup
-from modules.util.TrainProgress import TrainProgress
 from modules.util.config.TrainConfig import TrainConfig
+from modules.util.NamedParameterGroup import NamedParameterGroup, NamedParameterGroupCollection
 from modules.util.optimizer_util import init_model_parameters
+from modules.util.torch_util import state_dict_has_prefix
+from modules.util.TrainProgress import TrainProgress
+
+import torch
+
+# This is correct for the latest cascade, but other Wuerstchen models may have
+# different names. I honestly don't know what makes a good preset here so I'm
+# just guessing.
+PRESETS = {
+    "attn-only": ["attention"],
+    "full": [],
+    "down-blocks": ["down_blocks"],
+    "up-blocks": ["up_blocks"],
+    "mapper-only": ["mapper"],
+}
 
 
 class WuerstchenLoRASetup(
@@ -34,26 +46,19 @@ class WuerstchenLoRASetup(
         if config.text_encoder.train:
             parameter_group_collection.add_group(NamedParameterGroup(
                 unique_name="prior_text_encoder_lora",
-                display_name="prior_text_encoder_lora",
                 parameters=model.prior_text_encoder_lora.parameters(),
                 learning_rate=config.text_encoder.learning_rate,
             ))
 
         if config.train_any_embedding():
-            for parameter, placeholder, name in zip(model.prior_embedding_wrapper.additional_embeddings,
-                                                    model.prior_embedding_wrapper.additional_embedding_placeholders,
-                                                    model.prior_embedding_wrapper.additional_embedding_names):
-                parameter_group_collection.add_group(NamedParameterGroup(
-                    unique_name=f"prior_embeddings/{name}",
-                    display_name=f"prior_embeddings/{placeholder}",
-                    parameters=[parameter],
-                    learning_rate=config.embedding_learning_rate,
-                ))
+            self._add_embedding_param_groups(
+                model.prior_embedding_wrapper, parameter_group_collection, config.embedding_learning_rate,
+                "prior_embeddings"
+            )
 
         if config.prior.train:
             parameter_group_collection.add_group(NamedParameterGroup(
                 unique_name="prior_prior_lora",
-                display_name="prior_prior_lora",
                 parameters=model.prior_prior_lora.parameters(),
                 learning_rate=config.prior.learning_rate,
             ))
@@ -98,26 +103,29 @@ class WuerstchenLoRASetup(
         if config.train_any_embedding():
             model.prior_text_encoder.get_input_embeddings().to(dtype=config.embedding_weight_dtype.torch_dtype())
 
+        create_te = config.text_encoder.train or state_dict_has_prefix(model.lora_state_dict, "lora_prior_te")
         model.prior_text_encoder_lora = LoRAModuleWrapper(
-            model.prior_text_encoder, config.lora_rank, "lora_prior_te", config.lora_alpha
-        )
+            model.prior_text_encoder, "lora_prior_te", config
+        ) if create_te else None
 
         model.prior_prior_lora = LoRAModuleWrapper(
-            model.prior_prior, config.lora_rank, "lora_prior_unet", config.lora_alpha, ["attention"]
+            model.prior_prior, "lora_prior_unet", config, config.lora_layers.split(",")
         )
 
         if model.lora_state_dict:
-            model.prior_text_encoder_lora.load_state_dict(model.lora_state_dict)
+            if create_te:
+                model.prior_text_encoder_lora.load_state_dict(model.lora_state_dict)
             model.prior_prior_lora.load_state_dict(model.lora_state_dict)
             model.lora_state_dict = None
 
-        model.prior_text_encoder_lora.set_dropout(config.dropout_probability)
+        if config.text_encoder.train:
+            model.prior_text_encoder_lora.set_dropout(config.dropout_probability)
+        if create_te:
+            model.prior_text_encoder_lora.to(dtype=config.lora_weight_dtype.torch_dtype())
+            model.prior_text_encoder_lora.hook_to_module()
+
         model.prior_prior_lora.set_dropout(config.dropout_probability)
-
-        model.prior_text_encoder_lora.to(dtype=config.lora_weight_dtype.torch_dtype())
         model.prior_prior_lora.to(dtype=config.lora_weight_dtype.torch_dtype())
-
-        model.prior_text_encoder_lora.hook_to_module()
         model.prior_prior_lora.hook_to_module()
 
         self._remove_added_embeddings_from_tokenizer(model.prior_tokenizer)

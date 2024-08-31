@@ -3,8 +3,6 @@ import os
 import traceback
 from typing import Callable
 
-import customtkinter as ctk
-
 from modules.util import path_util
 from modules.util.config.TrainConfig import TrainConfig
 from modules.util.enum.ModelType import ModelType
@@ -12,6 +10,8 @@ from modules.util.enum.TrainingMethod import TrainingMethod
 from modules.util.optimizer_util import change_optimizer
 from modules.util.ui import components, dialogs
 from modules.util.ui.UIState import UIState
+
+import customtkinter as ctk
 
 
 class TopBar:
@@ -77,11 +77,13 @@ class TopBar:
                 ("Stable Diffusion 2.0", ModelType.STABLE_DIFFUSION_20),
                 ("Stable Diffusion 2.0 Inpainting", ModelType.STABLE_DIFFUSION_20_INPAINTING),
                 ("Stable Diffusion 2.1", ModelType.STABLE_DIFFUSION_21),
+                ("Stable Diffusion 3", ModelType.STABLE_DIFFUSION_3),
                 ("Stable Diffusion XL 1.0 Base", ModelType.STABLE_DIFFUSION_XL_10_BASE),
                 ("Stable Diffusion XL 1.0 Base Inpainting", ModelType.STABLE_DIFFUSION_XL_10_BASE_INPAINTING),
                 ("Wuerstchen v2", ModelType.WUERSTCHEN_2),
                 ("Stable Cascade", ModelType.STABLE_CASCADE_1),
                 ("PixArt Alpha", ModelType.PIXART_ALPHA),
+                ("PixArt Sigma", ModelType.PIXART_SIGMA),
             ],
             ui_state=self.ui_state,
             var_name="model_type",
@@ -101,19 +103,10 @@ class TopBar:
                 ("Embedding", TrainingMethod.EMBEDDING),
                 ("Fine Tune VAE", TrainingMethod.FINE_TUNE_VAE),
             ]
-        elif self.train_config.model_type.is_stable_diffusion_xl():
-            values = [
-                ("Fine Tune", TrainingMethod.FINE_TUNE),
-                ("LoRA", TrainingMethod.LORA),
-                ("Embedding", TrainingMethod.EMBEDDING),
-            ]
-        elif self.train_config.model_type.is_wuerstchen():
-            values = [
-                ("Fine Tune", TrainingMethod.FINE_TUNE),
-                ("LoRA", TrainingMethod.LORA),
-                ("Embedding", TrainingMethod.EMBEDDING),
-            ]
-        elif self.train_config.model_type.is_pixart_alpha():
+        elif self.train_config.model_type.is_stable_diffusion_3() \
+                or self.train_config.model_type.is_stable_diffusion_xl() \
+                or self.train_config.model_type.is_wuerstchen() \
+                or self.train_config.model_type.is_pixart():
             values = [
                 ("Fine Tune", TrainingMethod.FINE_TUNE),
                 ("LoRA", TrainingMethod.LORA),

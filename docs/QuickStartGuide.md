@@ -1,7 +1,7 @@
 # Quick Start Guide
 
 This Guide is intended to explain the basic principles of fine-tuning a model with OneTrainer in the order you will see
-them in the UI. For more in-depth explanations, read the specific topics. (When they become available)
+them in the UI. For more in-depth explanations, please check the wiki here: https://github.com/Nerogar/OneTrainer/wiki
 
 ### Preparing a Dataset
 
@@ -54,10 +54,6 @@ The data type defines the precision for the final model. Float16 will create sma
 reduced.
 
 ### Data Settings
-
-"Circular Mask Generation" and "Random Rotate and Crop" are mostly intended to train inpainting models. With these
-settings you can automatically create random circular masks for your images. You can also randomly rotate and crop the
-images to the masked region.
 
 Aspect Ratio Bucketing makes it possible to train the model on images with different aspect ratios at the same time. All
 images are resized to roughly match the same total pixel count.

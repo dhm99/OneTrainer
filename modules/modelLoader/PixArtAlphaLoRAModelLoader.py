@@ -5,9 +5,9 @@ from modules.modelLoader.mixin.ModelSpecModelLoaderMixin import ModelSpecModelLo
 from modules.modelLoader.pixartAlpha.PixArtAlphaEmbeddingLoader import PixArtAlphaEmbeddingLoader
 from modules.modelLoader.pixartAlpha.PixArtAlphaLoRALoader import PixArtAlphaLoRALoader
 from modules.modelLoader.pixartAlpha.PixArtAlphaModelLoader import PixArtAlphaModelLoader
+from modules.util.enum.ModelType import ModelType
 from modules.util.ModelNames import ModelNames
 from modules.util.ModelWeightDtypes import ModelWeightDtypes
-from modules.util.enum.ModelType import ModelType
 
 
 class PixArtAlphaLoRAModelLoader(
@@ -25,6 +25,8 @@ class PixArtAlphaLoRAModelLoader(
         match model_type:
             case ModelType.PIXART_ALPHA:
                 return "resources/sd_model_spec/pixart_alpha_1.0-lora.json"
+            case ModelType.PIXART_SIGMA:
+                return "resources/sd_model_spec/pixart_sigma_1.0-lora.json"
             case _:
                 return None
 

@@ -1,12 +1,19 @@
-import torch
-
 from modules.model.StableDiffusionModel import StableDiffusionModel
 from modules.modelSetup.BaseStableDiffusionSetup import BaseStableDiffusionSetup
 from modules.module.LoRAModule import LoRAModuleWrapper
-from modules.util.NamedParameterGroup import NamedParameterGroupCollection, NamedParameterGroup
-from modules.util.TrainProgress import TrainProgress
 from modules.util.config.TrainConfig import TrainConfig
+from modules.util.NamedParameterGroup import NamedParameterGroup, NamedParameterGroupCollection
 from modules.util.optimizer_util import init_model_parameters
+from modules.util.torch_util import state_dict_has_prefix
+from modules.util.TrainProgress import TrainProgress
+
+import torch
+
+PRESETS = {
+    "attn-mlp": ["attentions"],
+    "attn-only": ["attn"],
+    "full": [],
+}
 
 
 class StableDiffusionLoRASetup(
@@ -34,26 +41,18 @@ class StableDiffusionLoRASetup(
         if config.text_encoder.train:
             parameter_group_collection.add_group(NamedParameterGroup(
                 unique_name="text_encoder_lora",
-                display_name="text_encoder_lora",
                 parameters=model.text_encoder_lora.parameters(),
                 learning_rate=config.text_encoder.learning_rate,
             ))
 
         if config.train_any_embedding():
-            for parameter, placeholder, name in zip(model.embedding_wrapper.additional_embeddings,
-                                                    model.embedding_wrapper.additional_embedding_placeholders,
-                                                    model.embedding_wrapper.additional_embedding_names):
-                parameter_group_collection.add_group(NamedParameterGroup(
-                    unique_name=f"embeddings/{name}",
-                    display_name=f"embeddings/{placeholder}",
-                    parameters=[parameter],
-                    learning_rate=config.embedding_learning_rate,
-                ))
+            self._add_embedding_param_groups(
+                model.embedding_wrapper, parameter_group_collection, config.embedding_learning_rate, "embeddings"
+            )
 
         if config.unet.train:
             parameter_group_collection.add_group(NamedParameterGroup(
                 unique_name="unet_lora",
-                display_name="unet_lora",
                 parameters=model.unet_lora.parameters(),
                 learning_rate=config.unet.learning_rate,
             ))
@@ -93,26 +92,30 @@ class StableDiffusionLoRASetup(
         if config.train_any_embedding():
             model.text_encoder.get_input_embeddings().to(dtype=config.embedding_weight_dtype.torch_dtype())
 
+        create_te = config.text_encoder.train or state_dict_has_prefix(model.lora_state_dict, "lora_te")
         model.text_encoder_lora = LoRAModuleWrapper(
-            model.text_encoder, config.lora_rank, "lora_te", config.lora_alpha
-        )
+            model.text_encoder, "lora_te", config
+        ) if create_te else None
 
         model.unet_lora = LoRAModuleWrapper(
-            model.unet, config.lora_rank, "lora_unet", config.lora_alpha, ["attentions"]
+            model.unet, "lora_unet", config, config.lora_layers.split(",")
         )
 
         if model.lora_state_dict:
-            model.text_encoder_lora.load_state_dict(model.lora_state_dict)
+            if create_te:
+                model.text_encoder_lora.load_state_dict(model.lora_state_dict)
             model.unet_lora.load_state_dict(model.lora_state_dict)
             model.lora_state_dict = None
 
-        model.text_encoder_lora.set_dropout(config.dropout_probability)
+
+        if config.text_encoder.train:
+            model.text_encoder_lora.set_dropout(config.dropout_probability)
+        if create_te:
+            model.text_encoder_lora.to(dtype=config.lora_weight_dtype.torch_dtype())
+            model.text_encoder_lora.hook_to_module()
+
         model.unet_lora.set_dropout(config.dropout_probability)
-
-        model.text_encoder_lora.to(dtype=config.lora_weight_dtype.torch_dtype())
         model.unet_lora.to(dtype=config.lora_weight_dtype.torch_dtype())
-
-        model.text_encoder_lora.hook_to_module()
         model.unet_lora.hook_to_module()
 
         if config.rescale_noise_scheduler_to_zero_terminal_snr:
