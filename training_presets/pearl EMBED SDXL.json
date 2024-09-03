@@ -58,7 +58,7 @@
     "dropout_probability": 0.0,
     "loss_scaler": "NONE",
     "learning_rate_scaler": "BOTH",
-    "offset_noise_weight": 0.15,
+    "offset_noise_weight": 0.07,
     "perturbation_noise_weight": 0.01,
     "rescale_noise_scheduler_to_zero_terminal_snr": false,
     "force_v_prediction": false,
