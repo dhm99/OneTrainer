@@ -1,4 +1,5 @@
 import json
+import os
 import uuid
 from copy import deepcopy
 from typing import Any
@@ -11,6 +12,7 @@ from modules.util.enum.AttentionMechanism import AttentionMechanism
 from modules.util.enum.ConfigPart import ConfigPart
 from modules.util.enum.DataType import DataType
 from modules.util.enum.EMAMode import EMAMode
+from modules.util.enum.GradientCheckpointingMethod import GradientCheckpointingMethod
 from modules.util.enum.ImageFormat import ImageFormat
 from modules.util.enum.LearningRateScaler import LearningRateScaler
 from modules.util.enum.LearningRateScheduler import LearningRateScheduler
@@ -231,6 +233,9 @@ class TrainConfig(BaseConfig):
     cache_dir: str
     tensorboard: bool
     tensorboard_expose: bool
+    validation: bool
+    validate_after: float
+    validate_after_unit: TimeUnit
     continue_last_backup: bool
     include_train_config: ConfigPart
 
@@ -240,7 +245,7 @@ class TrainConfig(BaseConfig):
     output_dtype: DataType
     output_model_format: ModelFormat
     output_model_destination: str
-    gradient_checkpointing: bool
+    gradient_checkpointing: GradientCheckpointingMethod
     force_circular_padding: bool
 
     # data settings
@@ -283,6 +288,7 @@ class TrainConfig(BaseConfig):
     align_prop_cfg_scale: float
     mse_strength: float
     mae_strength: float
+    log_cosh_strength: float
     vb_loss_strength: float
     loss_weight_fn: LossWeight
     loss_weight_strength: float
@@ -387,12 +393,13 @@ class TrainConfig(BaseConfig):
     def __init__(self, data: list[(str, Any, type, bool)]):
         super(TrainConfig, self).__init__(
             data,
-            config_version=4,
+            config_version=5,
             config_migrations={
                 0: self.__migration_0,
                 1: self.__migration_1,
                 2: self.__migration_2,
                 3: self.__migration_3,
+                4: self.__migration_4,
             }
         )
 
@@ -536,6 +543,18 @@ class TrainConfig(BaseConfig):
 
         return migrated_data
 
+    def __migration_4(self, data: dict) -> dict:
+        migrated_data = data.copy()
+
+        gradient_checkpointing = migrated_data.pop("gradient_checkpointing")
+
+        if gradient_checkpointing:
+            migrated_data["gradient_checkpointing"] = GradientCheckpointingMethod.ON
+        else:
+            migrated_data["gradient_checkpointing"] = GradientCheckpointingMethod.OFF
+
+        return migrated_data
+
     def weight_dtypes(self) -> ModelWeightDtypes:
         return ModelWeightDtypes(
             self.weight_dtype if self.unet.weight_dtype == DataType.NONE else self.unet.weight_dtype,
@@ -587,6 +606,21 @@ class TrainConfig(BaseConfig):
             or ((self.text_encoder_3.train_embedding or not self.model_type.has_multiple_text_encoders())
                 and self.train_any_embedding())
 
+    def get_last_backup_path(self) -> str | None:
+        backups_path = os.path.join(self.workspace_dir, "backup")
+        if os.path.exists(backups_path):
+            backup_paths = sorted(
+                [path for path in os.listdir(backups_path) if
+                 os.path.isdir(os.path.join(backups_path, path))],
+                reverse=True,
+            )
+
+            if backup_paths:
+                last_backup_path = backup_paths[0]
+                return os.path.join(backups_path, last_backup_path)
+
+        return None
+
     def to_settings_dict(self) -> dict:
         config = TrainConfig.default_values().from_dict(self.to_dict())
 
@@ -635,6 +669,9 @@ class TrainConfig(BaseConfig):
         data.append(("cache_dir", "workspace-cache/run", str, False))
         data.append(("tensorboard", True, bool, False))
         data.append(("tensorboard_expose", False, bool, False))
+        data.append(("validation", False, bool, False))
+        data.append(("validate_after", 1, int, False))
+        data.append(("validate_after_unit", TimeUnit.EPOCH, TimeUnit, False))
         data.append(("continue_last_backup", False, bool, False))
         data.append(("include_train_config", ConfigPart.NONE, ConfigPart, False))
 
@@ -644,7 +681,7 @@ class TrainConfig(BaseConfig):
         data.append(("output_dtype", DataType.FLOAT_32, DataType, False))
         data.append(("output_model_format", ModelFormat.SAFETENSORS, ModelFormat, False))
         data.append(("output_model_destination", "models/model.safetensors", str, False))
-        data.append(("gradient_checkpointing", True, bool, False))
+        data.append(("gradient_checkpointing", GradientCheckpointingMethod.ON, GradientCheckpointingMethod, False))
         data.append(("force_circular_padding", False, bool, False))
 
         # data settings
@@ -685,6 +722,7 @@ class TrainConfig(BaseConfig):
         data.append(("align_prop_cfg_scale", 7.0, float, False))
         data.append(("mse_strength", 1.0, float, False))
         data.append(("mae_strength", 0.0, float, False))
+        data.append(("log_cosh_strength", 0.0, float, False))
         data.append(("vb_loss_strength", 1.0, float, False))
         data.append(("loss_weight_fn", LossWeight.CONSTANT, LossWeight, False))
         data.append(("loss_weight_strength", 5.0, float, False))
