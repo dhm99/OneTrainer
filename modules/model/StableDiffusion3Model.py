@@ -60,8 +60,10 @@ class StableDiffusion3Model(BaseModel):
 
     # autocast context
     autocast_context: torch.autocast | nullcontext
+    text_encoder_3_autocast_context: torch.autocast | nullcontext
 
     train_dtype: DataType
+    text_encoder_3_train_dtype: DataType
 
     # persistent embedding training data
     embedding: StableDiffusion3ModelEmbedding | None
@@ -216,17 +218,6 @@ class StableDiffusion3Model(BaseModel):
             tokenizer_3=self.tokenizer_3,
         )
 
-    # def force_v_prediction(self):
-    #     self.noise_scheduler.config.prediction_type = 'v_prediction'
-    #     self.sd_config['model']['params']['parameterization'] = 'v'
-    #
-    # def force_epsilon_prediction(self):
-    #     self.noise_scheduler.config.prediction_type = 'epsilon'
-    #     self.sd_config['model']['params']['parameterization'] = 'epsilon'
-    #
-    # def rescale_noise_scheduler_to_zero_terminal_snr(self):
-    #     rescale_noise_scheduler_to_zero_terminal_snr(self.noise_scheduler)
-
     def add_embeddings_to_prompt(self, prompt: str) -> str:
         return self._add_embeddings_to_prompt(self.additional_embeddings, self.embedding, prompt)
 
@@ -276,7 +267,7 @@ class StableDiffusion3Model(BaseModel):
                 return_tensors="pt",
             )
             tokens_2 = tokenizer_output.input_ids.to(self.text_encoder_2.device)
-            tokens_mask_2 = tokenizer_output.attention_mask.to(self.text_encoder_1.device)
+            tokens_mask_2 = tokenizer_output.attention_mask.to(self.text_encoder_2.device)
 
         if tokens_3 is None and text is not None and self.tokenizer_3 is not None:
             tokenizer_output = self.tokenizer_3(
@@ -287,7 +278,7 @@ class StableDiffusion3Model(BaseModel):
                 return_tensors="pt",
             )
             tokens_3 = tokenizer_output.input_ids.to(self.text_encoder_3.device)
-            tokens_mask_3 = tokenizer_output.attention_mask.to(self.text_encoder_1.device)
+            tokens_mask_3 = tokenizer_output.attention_mask.to(self.text_encoder_3.device)
 
         text_encoder_1_output, pooled_text_encoder_1_output = encode_clip(
             text_encoder=self.text_encoder_1,

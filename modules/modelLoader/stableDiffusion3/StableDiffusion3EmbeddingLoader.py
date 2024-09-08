@@ -50,7 +50,7 @@ class StableDiffusion3EmbeddingLoader:
             directory: str,
             embedding_name: EmbeddingName,
             load_single: bool,
-    ) -> tuple[Tensor, Tensor] | None:
+    ) -> tuple[Tensor, Tensor, Tensor] | None:
         if os.path.exists(os.path.join(directory, "meta.json")):
             if load_single:
                 safetensors_embedding_name = os.path.join(
