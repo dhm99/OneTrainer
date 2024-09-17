@@ -2,7 +2,7 @@
     {
         "__version": 0,
         "enabled": true,
-        "prompt": "photograph of jenna ushkowitz",
+        "prompt": "photograph of colin farrell",
         "negative_prompt": "",
         "height": 1024,
         "width": 1024,
