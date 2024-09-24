@@ -18,7 +18,7 @@
     "output_dtype": "FLOAT_32",
     "output_model_format": "SAFETENSORS",
     "output_model_destination": "models/lora.safetensors",
-    "gradient_checkpointing": "ON",
+    "gradient_checkpointing": "CPU_OFFLOADED",
     "force_circular_padding": false,
     "concept_file_name": "training_concepts/colin_farrell-flux-lora.json",
     "concepts": null,
