@@ -28,7 +28,7 @@
     "learning_rate_scheduler": "CONSTANT",
     "custom_learning_rate_scheduler": null,
     "scheduler_params": [],
-    "learning_rate": 0.0004,
+    "learning_rate": 0.00025,
     "learning_rate_warmup_steps": 25,
     "learning_rate_cycles": 1,
     "epochs": 200,
@@ -205,7 +205,7 @@
         "train_embedding": true,
         "attention_mask": false
     },
-    "masked_training": true,
+    "masked_training": false,
     "unmasked_probability": 0.1,
     "unmasked_weight": 0.1,
     "normalize_masked_area_loss": false,
