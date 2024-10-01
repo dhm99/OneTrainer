@@ -29,7 +29,8 @@ class SyncEvent:
     ):
         self.id = str(random.randint(0, 2 << 30)) if torch_event is not None else '-'
         self.__torch_event = torch_event
-        self.__log_msg = log_msg
+#        self.__log_msg = log_msg
+        self.__log_msg = False
 
     def record(self):
         if self.__torch_event is not None:
@@ -46,7 +47,7 @@ class SyncEvent:
             stream.wait_event(self.__torch_event)
 
         log_msg = f"{log_msg}, {self.id}"
-        log(log_msg)
+#        log(log_msg)
 
     def synchronize(self, log_msg: str | None = None):
         if log_msg is None:
@@ -65,7 +66,7 @@ class SyncEvent:
             log_msg = f"{log_msg}, skipping"
 
         log_msg = f"{log_msg}, {self.id}"
-        log(log_msg)
+#        log(log_msg)
 
     def __repr__(self) -> str:
         if self.__torch_event is None:
@@ -159,7 +160,7 @@ class LayerOffloadConductor:
 
             # move all layers to the train device, then move offloadable tensors back to the temp device
             for layer_index, layer in enumerate(self.__layers):
-                log(f"layer {layer_index} to train device")
+#                log(f"layer {layer_index} to train device")
                 layer.to(self.__train_device)
                 for module in layer.modules():
                     offload_quantized(module, self.__temp_device)
@@ -178,10 +179,10 @@ class LayerOffloadConductor:
         self.__layer_activations_included_offload_param_indices_map.append(included_offload_param_indices)
 
     def start_forward(self, keep_graph: bool):
-        log()
-        log()
-        log()
-        log("starting forward")
+#        log()
+#        log()
+#        log()
+#        log("starting forward")
         # torch.cuda.synchronize(self.__train_device)
         self.__transfer_stream.wait_stream(self.__train_stream)
         self.__wait_all_layer_transfers()
@@ -199,12 +200,12 @@ class LayerOffloadConductor:
                     self.__schedule_layer_to(layer_index, self.__temp_device)
 
     def before_layer(self, layer_index: int):
-        log()
-        log(f"before layer {layer_index}")
+        #log()
+        #log(f"before layer {layer_index}")
         if torch.is_grad_enabled() and self.__is_forward_pass:
             # Offloading can only be used with the use_reentrant=True checkpointing variant.
             # Gradients are only enabled during the back pass.
-            log("starting backward")
+#            log("starting backward")
             self.__is_forward_pass = False
 
         self.__wait_layer_transfer(layer_index)
@@ -250,7 +251,7 @@ class LayerOffloadConductor:
                     self.__schedule_layer_to(layer_index + 1, self.__temp_device)
 
     def after_layer(self, layer_index: int, activations: Any):
-        log(f"after layer {layer_index}")
+#        log(f"after layer {layer_index}")
 
         if self.__async_transfer:
             for x in self.__get_all_tensors(self.__layers[layer_index]):
@@ -301,7 +302,7 @@ class LayerOffloadConductor:
     ):
         current_device = self.__layer_device_map[layer_index]
         if device_equals(device, current_device):
-            log(f"schedule layer {layer_index} to {str(device)}, skipping")
+            #log(f"schedule layer {layer_index} to {str(device)}, skipping")
             return
 
         with create_stream_context(self.__transfer_stream):
@@ -310,7 +311,7 @@ class LayerOffloadConductor:
             if self.__async_transfer:
                 parameters = self.__get_all_tensors(layer)
                 parameter_pointers = [x.data_ptr() for x in parameters]
-                log(f"layer {layer_index} pointers transfer: {parameter_pointers}")
+#                log(f"layer {layer_index} pointers transfer: {parameter_pointers}")
                 for module in layer.modules():
                     offload_quantized(module, device, non_blocking=True)
                 for x in parameters:
@@ -319,10 +320,10 @@ class LayerOffloadConductor:
 
                 event = SyncEvent(self.__transfer_stream.record_event(), f"transfer to {device}")
                 self.__layer_transfer_event_map[layer_index] = event
-                log(f"schedule layer {layer_index} to {str(device)}, {event}")
+#                log(f"schedule layer {layer_index} to {str(device)}, {event}")
             else:
                 layer.to(device)
-                log(f"schedule layer {layer_index} to {str(device)}, blocking")
+#                log(f"schedule layer {layer_index} to {str(device)}, blocking")
 
             self.__layer_device_map[layer_index] = device
 
@@ -331,7 +332,7 @@ class LayerOffloadConductor:
             activations: Any,
             device: torch.device,
     ) -> SyncEvent:
-        log(f"schedule activations to {str(device)}")
+#        log(f"schedule activations to {str(device)}")
 
         with torch.cuda.stream(self.__transfer_stream):
             tensor_to_device_(activations, device, non_blocking=True)
