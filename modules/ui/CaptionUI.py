@@ -16,6 +16,7 @@ from modules.ui.GenerateMasksWindow import GenerateMasksWindow
 from modules.util import path_util
 from modules.util.torch_util import default_device
 from modules.util.ui import components
+from modules.util.ui.ui_utils import bind_mousewheel
 from modules.util.ui.UIState import UIState
 
 import torch
@@ -195,7 +196,7 @@ Mouse wheel: increase or decrease brush size"""
         self.image_label.bind("<Motion>", self.edit_mask)
         self.image_label.bind("<Button-1>", self.edit_mask)
         self.image_label.bind("<Button-3>", self.edit_mask)
-        self.image_label.bind("<MouseWheel>", self.draw_mask_radius)
+        bind_mousewheel(self.image_label, {self.image_label.children["!label"]}, self.draw_mask_radius)
 
         # prompt
         self.prompt_var = ctk.StringVar()
@@ -256,7 +257,7 @@ Mouse wheel: increase or decrease brush size"""
 
         try:
             return Image.open(image_name).convert('RGB')
-        except:
+        except Exception:
             print(f'Could not open image {image_name}')
 
     def load_mask(self):
@@ -267,7 +268,7 @@ Mouse wheel: increase or decrease brush size"""
 
             try:
                 return Image.open(mask_name).convert('RGB')
-            except:
+            except Exception:
                 return None
         else:
             return None
@@ -281,7 +282,7 @@ Mouse wheel: increase or decrease brush size"""
             try:
                 with open(prompt_name, "r", encoding='utf-8') as f:
                     return f.readlines()[0].strip()
-            except:
+            except Exception:
                 return ""
         else:
             return ""
@@ -351,12 +352,10 @@ Mouse wheel: increase or decrease brush size"""
         else:
             self.image.configure(light_image=self.pil_image, size=self.pil_image.size)
 
-    def draw_mask_radius(self, event):
-        if event.widget != self.image_label.children["!label"]:
-            return
-
-        delta = 1.0 + (-np.sign(event.delta) * 0.05)
-        self.mask_draw_radius *= delta
+    def draw_mask_radius(self, delta, raw_event):
+        # Wheel up = Increase radius. Wheel down = Decrease radius.
+        multiplier = 1.0 + (delta * 0.05)
+        self.mask_draw_radius = max(0.0025, self.mask_draw_radius * multiplier)
 
     def edit_mask(self, event):
         if not self.enable_mask_editing_var.get():
@@ -400,7 +399,7 @@ Mouse wheel: increase or decrease brush size"""
         if is_left:
             try:
                 alpha = float(self.mask_editing_alpha.get())
-            except:
+            except Exception:
                 alpha = 1.0
             rgb_value = int(max(0.0, min(alpha, 1.0)) * 255)  # max/min stuff to clamp to 0 - 255 range
             color = (rgb_value, rgb_value, rgb_value)
@@ -435,7 +434,7 @@ Mouse wheel: increase or decrease brush size"""
         if is_left:
             try:
                 alpha = float(self.mask_editing_alpha.get())
-            except:
+            except Exception:
                 alpha = 1.0
             rgb_value = int(max(0.0, min(alpha, 1.0)) * 255)  # max/min stuff to clamp to 0 - 255 range
             color = (rgb_value, rgb_value, rgb_value)
@@ -470,14 +469,11 @@ Mouse wheel: increase or decrease brush size"""
             try:
                 with open(prompt_name, "w", encoding='utf-8') as f:
                     f.write(self.prompt_var.get())
-            except:
-                return ""
+            except Exception:
+                return
 
             if self.pil_mask:
                 self.pil_mask.save(mask_name)
-
-        else:
-            return ""
 
     def draw_mask_editing_mode(self, *args):
         self.mask_editing_mode = 'draw'
@@ -485,6 +481,7 @@ Mouse wheel: increase or decrease brush size"""
         if args:
             # disable default event
             return "break"
+        return None
 
     def fill_mask_editing_mode(self, *args):
         self.mask_editing_mode = 'fill'
@@ -515,7 +512,7 @@ Mouse wheel: increase or decrease brush size"""
             image_name = self.image_rel_paths[self.current_image_index]
             image_name = os.path.realpath(os.path.join(self.dir, image_name))
             subprocess.Popen(f"explorer /select,{image_name}")
-        except:
+        except Exception:
             traceback.print_exc()
 
     def load_masking_model(self, model):

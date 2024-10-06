@@ -74,7 +74,7 @@ class PixArtAlphaModel(BaseModel):
             self,
             model_type: ModelType,
     ):
-        super(PixArtAlphaModel, self).__init__(
+        super().__init__(
             model_type=model_type,
         )
 

@@ -16,14 +16,14 @@ class FluxLoRAModelLoader(
     InternalModelLoaderMixin,
 ):
     def __init__(self):
-        super(FluxLoRAModelLoader, self).__init__()
+        super().__init__()
 
     def _default_model_spec_name(
             self,
             model_type: ModelType,
     ) -> str | None:
         match model_type:
-            case ModelType.STABLE_DIFFUSION_3:
+            case ModelType.FLUX_DEV_1:
                 return "resources/sd_model_spec/flux_dev_1.0-lora.json"
             case _:
                 return None

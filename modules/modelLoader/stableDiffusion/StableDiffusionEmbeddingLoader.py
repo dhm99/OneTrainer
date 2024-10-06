@@ -1,3 +1,4 @@
+import contextlib
 import os
 import traceback
 
@@ -12,7 +13,7 @@ from safetensors.torch import load_file
 
 class StableDiffusionEmbeddingLoader:
     def __init__(self):
-        super(StableDiffusionEmbeddingLoader, self).__init__()
+        super().__init__()
 
     def __load_embedding(
             self,
@@ -21,15 +22,11 @@ class StableDiffusionEmbeddingLoader:
         if embedding_name == "":
             return None
 
-        try:
+        with contextlib.suppress(Exception):
             return torch.load(embedding_name)['string_to_param']['*']
-        except:
-            pass
 
-        try:
+        with contextlib.suppress(Exception):
             return load_file(embedding_name)["emp_params"]
-        except:
-            pass
 
         raise Exception(f"could not load embedding: {embedding_name}")
 
@@ -73,11 +70,11 @@ class StableDiffusionEmbeddingLoader:
             try:
                 model.additional_embedding_states.append(self.__load_internal(model_names.base_model, embedding_name, False))
                 continue
-            except:
+            except Exception:
                 try:
                     model.additional_embedding_states.append(self.__load_embedding(embedding_name.model_name))
                     continue
-                except:
+                except Exception:
                     stacktraces.append(traceback.format_exc())
 
                 stacktraces.append(traceback.format_exc())
@@ -98,13 +95,13 @@ class StableDiffusionEmbeddingLoader:
         try:
             model.embedding_state = self.__load_internal(model_names.embedding.model_name, embedding_name, True)
             return
-        except:
+        except Exception:
             stacktraces.append(traceback.format_exc())
 
             try:
                 model.embedding_state = self.__load_embedding(embedding_name.model_name)
                 return
-            except:
+            except Exception:
                 stacktraces.append(traceback.format_exc())
 
         for stacktrace in stacktraces:

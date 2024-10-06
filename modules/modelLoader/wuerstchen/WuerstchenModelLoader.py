@@ -19,7 +19,7 @@ from safetensors.torch import load_file
 
 class WuerstchenModelLoader:
     def __init__(self):
-        super(WuerstchenModelLoader, self).__init__()
+        super().__init__()
 
     def __load_internal(
             self,
@@ -116,7 +116,7 @@ class WuerstchenModelLoader:
         elif model_type.is_stable_cascade():
             if prior_prior_model_name:
                 with safe_open(prior_prior_model_name, framework="pt") as f:
-                    if any(key.startswith("down_blocks.0.23") for key in f.keys()):
+                    if any(key.startswith("down_blocks.0.23") for key in f.keys()):  # noqa: SIM118
                         config_filename = "resources/model_config/stable_cascade/stable_cascade_prior_3.6b.json"
                     else:
                         config_filename = "resources/model_config/stable_cascade/stable_cascade_prior_1.0b.json"
@@ -193,7 +193,7 @@ class WuerstchenModelLoader:
                 decoder_model_name,
             )
             return
-        except:
+        except Exception:
             stacktraces.append(traceback.format_exc())
 
         try:
@@ -207,7 +207,7 @@ class WuerstchenModelLoader:
                 decoder_model_name,
             )
             return
-        except:
+        except Exception:
             stacktraces.append(traceback.format_exc())
 
         for stacktrace in stacktraces:

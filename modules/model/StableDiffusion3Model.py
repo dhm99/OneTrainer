@@ -91,7 +91,7 @@ class StableDiffusion3Model(BaseModel):
             self,
             model_type: ModelType,
     ):
-        super(StableDiffusion3Model, self).__init__(
+        super().__init__(
             model_type=model_type,
         )
 

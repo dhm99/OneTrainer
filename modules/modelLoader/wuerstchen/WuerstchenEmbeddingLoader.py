@@ -1,3 +1,4 @@
+import contextlib
 import os
 import traceback
 
@@ -12,7 +13,7 @@ from safetensors.torch import load_file
 
 class WuerstchenEmbeddingLoader:
     def __init__(self):
-        super(WuerstchenEmbeddingLoader, self).__init__()
+        super().__init__()
 
     def __load_embedding(
             self,
@@ -21,23 +22,19 @@ class WuerstchenEmbeddingLoader:
         if embedding_name == "":
             return None
 
-        try:
+        with contextlib.suppress(Exception):
             embedding_state = torch.load(embedding_name)
 
             prior_text_encoder_vector = embedding_state['clip_g']
 
             return prior_text_encoder_vector
-        except:
-            pass
 
-        try:
+        with contextlib.suppress(Exception):
             embedding_state = load_file(embedding_name)
 
             prior_text_encoder_vector = embedding_state['clip_g']
 
             return prior_text_encoder_vector
-        except:
-            pass
 
         raise Exception(f"could not load embedding: {embedding_name}")
 
@@ -81,11 +78,11 @@ class WuerstchenEmbeddingLoader:
             try:
                 model.additional_embedding_states.append(self.__load_internal(model_names.base_model, embedding_name, False))
                 continue
-            except:
+            except Exception:
                 try:
                     model.additional_embedding_states.append(self.__load_embedding(embedding_name.model_name))
                     continue
-                except:
+                except Exception:
                     stacktraces.append(traceback.format_exc())
 
                 stacktraces.append(traceback.format_exc())
@@ -106,13 +103,13 @@ class WuerstchenEmbeddingLoader:
         try:
             model.embedding_state = self.__load_internal(model_names.embedding.model_name, embedding_name, True)
             return
-        except:
+        except Exception:
             stacktraces.append(traceback.format_exc())
 
             try:
                 model.embedding_state = self.__load_embedding(embedding_name.model_name)
                 return
-            except:
+            except Exception:
                 stacktraces.append(traceback.format_exc())
 
         for stacktrace in stacktraces:
