@@ -3,7 +3,7 @@
         "__version": 1,
         "image": {
             "__version": 0,
-            "enable_crop_jitter": false,
+            "enable_crop_jitter": true,
             "enable_random_flip": false,
             "enable_fixed_flip": false,
             "enable_random_rotate": false,
@@ -40,7 +40,7 @@
         "enabled": true,
         "validation_concept": false,
         "include_subdirectories": false,
-        "image_variations": 1,
+        "image_variations": 10,
         "text_variations": 1,
         "balancing": 1.0,
         "balancing_strategy": "REPEATS",
