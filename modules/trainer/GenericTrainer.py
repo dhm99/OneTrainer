@@ -88,6 +88,8 @@ class GenericTrainer(BaseTrainer):
         self.grad_hook_handles = []
 
     def start(self):
+        self.__save_config_to_workspace()
+
         if self.config.clear_cache_before_training and self.config.latent_caching:
             self.__clear_cache()
 
@@ -150,6 +152,13 @@ class GenericTrainer(BaseTrainer):
             self.validation_data_loader = self.create_data_loader(
                 self.model, self.model.train_progress, is_validation=True
             )
+
+    def __save_config_to_workspace(self):
+        path = path_util.canonical_join(self.config.workspace_dir, "config")
+        os.makedirs(Path(path).absolute(), exist_ok=True)
+        path = path_util.canonical_join(path, f"{get_string_timestamp()}.json")
+        with open(path, "w") as f:
+            json.dump(self.config.to_pack_dict(), f, indent=4)
 
     def __clear_cache(self):
         print(
@@ -312,13 +321,16 @@ class GenericTrainer(BaseTrainer):
 
         torch_gc()
 
-    def __validate(self, train_progress):
+    def __validate(self, train_progress: TrainProgress):
         if self.__needs_validate(train_progress):
             self.validation_data_loader.get_data_set().start_next_epoch()
             current_epoch_length_validation = self.validation_data_loader.get_data_set().approximate_length()
 
             if current_epoch_length_validation == 0:
                 return
+
+            self.callbacks.on_update_status("calculating validation loss")
+            self.model_setup.setup_train_device(self.model, self.config)
 
             torch_gc()
 
@@ -498,8 +510,10 @@ class GenericTrainer(BaseTrainer):
         )
 
     def __needs_save(self, train_progress: TrainProgress):
-        return self.repeating_action_needed(
-            "save", self.config.save_after, self.config.save_after_unit, train_progress, start_at_zero=False
+        return self.single_action_elapsed(
+            "save_skip_first", self.config.save_skip_first, self.config.save_every_unit, train_progress
+        ) and self.repeating_action_needed(
+            "save", self.config.save_every, self.config.save_every_unit, train_progress, start_at_zero=False
         )
 
     def __needs_gc(self, train_progress: TrainProgress):
