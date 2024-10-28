@@ -1,0 +1,22 @@
+[
+    {
+        "__version": 0,
+        "enabled": true,
+        "prompt": "photograph of colin farrell",
+        "negative_prompt": "",
+        "height": 1024,
+        "width": 1024,
+        "seed": 42,
+        "random_seed": false,
+        "diffusion_steps": 20,
+        "cfg_scale": 7.0,
+        "noise_scheduler": "DDIM",
+        "text_encoder_1_layer_skip": 0,
+        "text_encoder_2_layer_skip": 0,
+        "text_encoder_3_layer_skip": 0,
+        "force_last_timestep": false,
+        "sample_inpainting": false,
+        "base_image_path": "",
+        "mask_image_path": ""
+    }
+]
