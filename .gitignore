@@ -20,3 +20,5 @@ config.json
 pixi.lock
 pixi.toml
 *.egg-info
+# Emacs backup
+*~
