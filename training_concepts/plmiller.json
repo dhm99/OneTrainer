@@ -40,7 +40,7 @@
         "enabled": true,
         "validation_concept": false,
         "include_subdirectories": false,
-        "image_variations": 1,
+        "image_variations": 10,
         "text_variations": 1,
         "balancing": 1.0,
         "balancing_strategy": "REPEATS",

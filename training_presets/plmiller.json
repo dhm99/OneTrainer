@@ -29,10 +29,10 @@
     "learning_rate_scheduler": "CONSTANT",
     "custom_learning_rate_scheduler": null,
     "scheduler_params": [],
-    "learning_rate": 0.0004,
+    "learning_rate": 0.0003,
     "learning_rate_warmup_steps": 25,
     "learning_rate_cycles": 1,
-    "epochs": 400,
+    "epochs": 300,
     "batch_size": 4,
     "gradient_accumulation_steps": 1,
     "ema": "OFF",
@@ -310,6 +310,6 @@
     "backup_before_save": true,
     "save_every": 20,
     "save_every_unit": "EPOCH",
-    "save_skip_first": 40,
+    "save_skip_first": 10,
     "save_filename_prefix": ""
 }
