@@ -39,7 +39,7 @@ class BaseStableDiffusion3Setup(
     metaclass=ABCMeta
 ):
 
-    def _setup_optimizations(
+    def setup_optimizations(
             self,
             model: StableDiffusion3Model,
             config: TrainConfig,
@@ -48,11 +48,7 @@ class BaseStableDiffusion3Setup(
             model.transformer.set_attn_processor(JointAttnProcessor2_0())
         elif config.attention_mechanism == AttentionMechanism.XFORMERS and is_xformers_available():
             try:
-                # TODO: add support for SD3.5 xformers
-                if model.model_type.is_stable_diffusion_3_5():
-                    model.transformer.set_attn_processor(JointAttnProcessor2_0())
-                else:
-                    model.transformer.set_attn_processor(XFormersJointAttnProcessor(model.train_dtype.torch_dtype()))
+                model.transformer.set_attn_processor(XFormersJointAttnProcessor(model.train_dtype.torch_dtype()))
                 model.vae.enable_xformers_memory_efficient_attention()
             except Exception as e:
                 print(
@@ -72,17 +68,15 @@ class BaseStableDiffusion3Setup(
                     )
 
         if config.gradient_checkpointing.enabled():
-            enable_checkpointing_for_stable_diffusion_3_transformer(
-                model.transformer, self.train_device, self.temp_device, config.gradient_checkpointing.offload())
+            model.transformer_offload_conductor = \
+                enable_checkpointing_for_stable_diffusion_3_transformer(model.transformer, config)
             if model.text_encoder_1 is not None:
-                enable_checkpointing_for_clip_encoder_layers(
-                    model.text_encoder_1, self.train_device, self.temp_device, config.gradient_checkpointing.offload())
+                enable_checkpointing_for_clip_encoder_layers(model.text_encoder_1, config)
             if model.text_encoder_2 is not None:
-                enable_checkpointing_for_clip_encoder_layers(
-                    model.text_encoder_2, self.train_device, self.temp_device, config.gradient_checkpointing.offload())
-            if model.text_encoder_3 is not None and config.train_text_encoder_3_or_embedding():
-                enable_checkpointing_for_t5_encoder_layers(
-                    model.text_encoder_3, self.train_device, self.temp_device, config.gradient_checkpointing.offload())
+                enable_checkpointing_for_clip_encoder_layers(model.text_encoder_2, config)
+            if model.text_encoder_3 is not None:
+                model.text_encoder_3_offload_conductor = \
+                    enable_checkpointing_for_t5_encoder_layers(model.text_encoder_3, config)
 
         if config.force_circular_padding:
             apply_circular_padding_to_conv2d(model.vae)
@@ -421,7 +415,7 @@ class BaseStableDiffusion3Setup(
                 # negative_added_cond_kwargs = {"text_embeds": negative_pooled_text_encoder_2_output,
                 #                               "time_ids": add_time_ids}
 
-                # checkpointed_unet = create_checkpointed_forward(model.unet, self.train_device, self.temp_device)
+                # checkpointed_unet = create_checkpointed_forward(model.unet, self.train_device)
 
                 # for step in range(config.align_prop_steps):
                 #     timestep = model.noise_scheduler.timesteps[step] \
@@ -488,7 +482,7 @@ class BaseStableDiffusion3Setup(
                 #     'predicted': predicted_image,
                 # }
 
-            timestep_index = self._get_timestep_discrete(
+            timestep = self._get_timestep_discrete(
                 model.noise_scheduler.config['num_train_timesteps'],
                 deterministic,
                 generator,
@@ -496,10 +490,10 @@ class BaseStableDiffusion3Setup(
                 config,
             )
 
-            scaled_noisy_latent_image, timestep, sigma = self._add_noise_discrete(
+            scaled_noisy_latent_image, sigma = self._add_noise_discrete(
                 scaled_latent_image,
                 latent_noise,
-                timestep_index,
+                timestep,
                 model.noise_scheduler.timesteps,
             )
 
