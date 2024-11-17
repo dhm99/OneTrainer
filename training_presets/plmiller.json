@@ -8,6 +8,7 @@
     "cache_dir": "workspace-cache/run",
     "tensorboard": true,
     "tensorboard_expose": false,
+    "tensorboard_port": 6006,
     "validation": false,
     "validate_after": 1,
     "validate_after_unit": "EPOCH",
@@ -30,8 +31,8 @@
     "custom_learning_rate_scheduler": null,
     "scheduler_params": [],
     "learning_rate": 0.0003,
-    "learning_rate_warmup_steps": 25,
-    "learning_rate_cycles": 1,
+    "learning_rate_warmup_steps": 25.0,
+    "learning_rate_cycles": 1.0,
     "epochs": 300,
     "batch_size": 4,
     "gradient_accumulation_steps": 1,
@@ -63,6 +64,7 @@
     "dropout_probability": 0.0,
     "loss_scaler": "NONE",
     "learning_rate_scaler": "NONE",
+    "clip_grad_norm": 1.0,
     "offset_noise_weight": 0.0,
     "perturbation_noise_weight": 0.0,
     "rescale_noise_scheduler_to_zero_terminal_snr": false,
@@ -97,7 +99,7 @@
         "weight_dtype": "NFLOAT_4",
         "dropout_probability": 0.0,
         "train_embedding": true,
-        "attention_mask": true
+        "attention_mask": false
     },
     "text_encoder": {
         "__version": 0,

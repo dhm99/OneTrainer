@@ -32,7 +32,17 @@
             "prompt_path": "",
             "enable_tag_shuffling": false,
             "tag_delimiter": ",",
-            "keep_tags_count": 1
+            "keep_tags_count": 1,
+            "tag_dropout_enable": false,
+            "tag_dropout_mode": "FULL",
+            "tag_dropout_probability": 0.0,
+            "tag_dropout_special_tags_mode": "NONE",
+            "tag_dropout_special_tags": "",
+            "tag_dropout_special_tags_regex": false,
+            "caps_randomize_enable": false,
+            "caps_randomize_mode": "capslock, title, first, random",
+            "caps_randomize_probability": 0.0,
+            "caps_randomize_lowercase": false
         },
         "name": "plmiller",
         "path": "C:/Users/dhmmi/SD_Training/OneTrainer_Images/plmiller/Current",
