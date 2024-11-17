@@ -11,8 +11,8 @@ from modules.modelSetup.mixin.ModelSetupNoiseMixin import ModelSetupNoiseMixin
 from modules.module.AdditionalEmbeddingWrapper import AdditionalEmbeddingWrapper
 from modules.util.checkpointing_util import (
     create_checkpointed_forward,
+    enable_checkpointing_for_basic_transformer_blocks,
     enable_checkpointing_for_clip_encoder_layers,
-    enable_checkpointing_for_sdxl_transformer_blocks,
 )
 from modules.util.config.TrainConfig import TrainConfig
 from modules.util.conv_util import apply_circular_padding_to_conv2d
@@ -38,7 +38,7 @@ class BaseStableDiffusionXLSetup(
     metaclass=ABCMeta
 ):
 
-    def _setup_optimizations(
+    def setup_optimizations(
             self,
             model: StableDiffusionXLModel,
             config: TrainConfig,
@@ -68,12 +68,9 @@ class BaseStableDiffusionXLSetup(
 
         if config.gradient_checkpointing.enabled():
             model.unet.enable_gradient_checkpointing()
-            enable_checkpointing_for_sdxl_transformer_blocks(
-                model.unet, self.train_device, self.temp_device, config.gradient_checkpointing.offload())
-            enable_checkpointing_for_clip_encoder_layers(
-                model.text_encoder_1, self.train_device, self.temp_device, config.gradient_checkpointing.offload())
-            enable_checkpointing_for_clip_encoder_layers(
-                model.text_encoder_2, self.train_device, self.temp_device, config.gradient_checkpointing.offload())
+            enable_checkpointing_for_basic_transformer_blocks(model.unet, config, offload_enabled=False)
+            enable_checkpointing_for_clip_encoder_layers(model.text_encoder_1, config)
+            enable_checkpointing_for_clip_encoder_layers(model.text_encoder_2, config)
 
         if config.force_circular_padding:
             apply_circular_padding_to_conv2d(model.vae)
@@ -312,7 +309,7 @@ class BaseStableDiffusionXLSetup(
                 negative_added_cond_kwargs = {"text_embeds": negative_pooled_text_encoder_2_output,
                                               "time_ids": add_time_ids}
 
-                checkpointed_unet = create_checkpointed_forward(model.unet, self.train_device, self.temp_device)
+                checkpointed_unet = create_checkpointed_forward(model.unet, self.train_device)
 
                 for step in range(config.align_prop_steps):
                     timestep = model.noise_scheduler.timesteps[step] \
@@ -327,16 +324,16 @@ class BaseStableDiffusionXLSetup(
                         latent_input = scaled_noisy_latent_image
 
                     predicted_latent_noise = checkpointed_unet(
-                        sample=latent_input,
+                        sample=latent_input.to(dtype=model.train_dtype.torch_dtype()),
                         timestep=timestep,
-                        encoder_hidden_states=text_encoder_output,
+                        encoder_hidden_states=text_encoder_output.to(dtype=model.train_dtype.torch_dtype()),
                         added_cond_kwargs=added_cond_kwargs,
                     ).sample
 
                     negative_predicted_latent_noise = checkpointed_unet(
-                        sample=latent_input,
+                        sample=latent_input.to(dtype=model.train_dtype.torch_dtype()),
                         timestep=timestep,
-                        encoder_hidden_states=negative_text_encoder_output,
+                        encoder_hidden_states=negative_text_encoder_output.to(dtype=model.train_dtype.torch_dtype()),
                         added_cond_kwargs=negative_added_cond_kwargs,
                     ).sample
 
@@ -425,9 +422,9 @@ class BaseStableDiffusionXLSetup(
 
                 added_cond_kwargs = {"text_embeds": pooled_text_encoder_2_output, "time_ids": add_time_ids}
                 predicted_latent_noise = model.unet(
-                    sample=latent_input,
+                    sample=latent_input.to(dtype=model.train_dtype.torch_dtype()),
                     timestep=timestep,
-                    encoder_hidden_states=text_encoder_output,
+                    encoder_hidden_states=text_encoder_output.to(dtype=model.train_dtype.torch_dtype()),
                     added_cond_kwargs=added_cond_kwargs,
                 ).sample
 
