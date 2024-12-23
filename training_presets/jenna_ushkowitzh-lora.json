@@ -22,7 +22,7 @@
     "gradient_checkpointing": "CPU_OFFLOADED",
     "layer_offload_fraction": 0.15,
     "force_circular_padding": false,
-    "concept_file_name": "training_concepts/plmiller.json",
+    "concept_file_name": "training_concepts/jenna_ushkowitzh.json",
     "concepts": null,
     "aspect_ratio_bucketing": true,
     "latent_caching": true,
@@ -298,7 +298,7 @@
         "adam_debias": false
     },
     "optimizer_defaults": {},
-    "sample_definition_file_name": "training_samples/plmiller.json",
+    "sample_definition_file_name": "training_samples/jenna_ushkowitzh.json",
     "samples": null,
     "sample_after": 10,
     "sample_after_unit": "EPOCH",
