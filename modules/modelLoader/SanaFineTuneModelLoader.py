@@ -1,15 +1,15 @@
-from modules.model.FluxModel import FluxModel
+from modules.model.SanaModel import SanaModel
 from modules.modelLoader.BaseModelLoader import BaseModelLoader
-from modules.modelLoader.flux.FluxEmbeddingLoader import FluxEmbeddingLoader
-from modules.modelLoader.flux.FluxModelLoader import FluxModelLoader
 from modules.modelLoader.mixin.InternalModelLoaderMixin import InternalModelLoaderMixin
 from modules.modelLoader.mixin.ModelSpecModelLoaderMixin import ModelSpecModelLoaderMixin
+from modules.modelLoader.sana.SanaEmbeddingLoader import SanaEmbeddingLoader
+from modules.modelLoader.sana.SanaModelLoader import SanaModelLoader
 from modules.util.enum.ModelType import ModelType
 from modules.util.ModelNames import ModelNames
 from modules.util.ModelWeightDtypes import ModelWeightDtypes
 
 
-class FluxFineTuneModelLoader(
+class SanaFineTuneModelLoader(
     BaseModelLoader,
     ModelSpecModelLoaderMixin,
     InternalModelLoaderMixin,
@@ -22,10 +22,8 @@ class FluxFineTuneModelLoader(
             model_type: ModelType,
     ) -> str | None:
         match model_type:
-            case ModelType.FLUX_DEV_1:
-                return "resources/sd_model_spec/flux_dev_1.0.json"
-            case ModelType.FLUX_FILL_DEV_1:
-                return "resources/sd_model_spec/flux_dev_fill_1.0.json"
+            case ModelType.SANA:
+                return "resources/sd_model_spec/sana.json"
             case _:
                 return None
 
@@ -34,11 +32,11 @@ class FluxFineTuneModelLoader(
             model_type: ModelType,
             model_names: ModelNames,
             weight_dtypes: ModelWeightDtypes,
-    ) -> FluxModel | None:
-        base_model_loader = FluxModelLoader()
-        embedding_loader = FluxEmbeddingLoader()
+    ) -> SanaModel | None:
+        base_model_loader = SanaModelLoader()
+        embedding_loader = SanaEmbeddingLoader()
 
-        model = FluxModel(model_type=model_type)
+        model = SanaModel(model_type=model_type)
 
         self._load_internal_data(model, model_names.base_model)
         model.model_spec = self._load_default_model_spec(model_type)

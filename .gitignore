@@ -20,3 +20,4 @@ config.json
 pixi.lock
 pixi.toml
 *.egg-info
+secrets.json
