@@ -2,7 +2,7 @@
     {
         "__version": 0,
         "enabled": true,
-        "prompt": "photograph of blonde peyton list",
+        "prompt": "photograph of peyton list",
         "negative_prompt": "",
         "height": 1024,
         "width": 1024,
@@ -14,6 +14,7 @@
         "text_encoder_1_layer_skip": 0,
         "text_encoder_2_layer_skip": 0,
         "text_encoder_3_layer_skip": 0,
+        "prior_attention_mask": false,
         "force_last_timestep": false,
         "sample_inpainting": false,
         "base_image_path": "",
