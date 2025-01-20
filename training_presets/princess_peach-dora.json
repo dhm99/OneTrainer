@@ -314,7 +314,7 @@
     "optimizer_defaults": {},
     "sample_definition_file_name": "training_samples/princess_peach.json",
     "samples": null,
-    "sample_after": 5,
+    "sample_after": 20,
     "sample_after_unit": "EPOCH",
     "sample_image_format": "JPG",
     "samples_to_tensorboard": true,

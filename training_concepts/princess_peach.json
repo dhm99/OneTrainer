@@ -52,7 +52,7 @@
         "include_subdirectories": false,
         "image_variations": 10,
         "text_variations": 1,
-        "balancing": 2.0,
+        "balancing": 1.0,
         "balancing_strategy": "REPEATS",
         "loss_weight": 1.0
     },
