@@ -6,9 +6,11 @@ from collections.abc import Callable
 from pathlib import Path
 from tkinter import filedialog
 
+from modules.trainer.CloudTrainer import CloudTrainer
 from modules.trainer.GenericTrainer import GenericTrainer
 from modules.ui.AdditionalEmbeddingsTab import AdditionalEmbeddingsTab
 from modules.ui.CaptionUI import CaptionUI
+from modules.ui.CloudTab import CloudTab
 from modules.ui.ConceptTab import ConceptTab
 from modules.ui.ConvertModelUI import ConvertModelUI
 from modules.ui.LoraTab import LoraTab
@@ -70,6 +72,7 @@ class TrainUI(ctk.CTk):
         self.model_tab = None
         self.training_tab = None
         self.lora_tab = None
+        self.cloud_tab = None
         self.additional_embeddings_tab = None
 
         self.top_bar_component = self.top_bar(self)
@@ -140,6 +143,7 @@ class TrainUI(ctk.CTk):
         self.backup_tab = self.create_backup_tab(self.tabview.add("backup"))
         self.tools_tab = self.create_tools_tab(self.tabview.add("tools"))
         self.additional_embeddings_tab = self.create_additional_embeddings_tab(self.tabview.add("additional embeddings"))
+        self.cloud_tab = self.create_cloud_tab(self.tabview.add("cloud"))
 
         self.change_training_method(self.train_config.training_method)
 
@@ -252,6 +256,9 @@ class TrainUI(ctk.CTk):
 
     def create_training_tab(self, master) -> TrainingTab:
         return TrainingTab(master, self.train_config, self.ui_state)
+
+    def create_cloud_tab(self, master) -> CloudTab:
+        return CloudTab(master, self.train_config, self.ui_state,parent=self)
 
     def create_sampling_tab(self, master):
         master.grid_rowconfigure(0, weight=0)
@@ -409,7 +416,7 @@ class TrainUI(ctk.CTk):
 
         # token count
         components.label(frame, 1, 0, "Token count",
-                         tooltip="The token count used when creating a new embedding")
+                         tooltip="The token count used when creating a new embedding. Leave empty to auto detect from the initial embedding text.")
         components.entry(frame, 1, 1, self.ui_state, "embedding.token_count")
 
         # initial embedding text
@@ -552,14 +559,20 @@ class TrainUI(ctk.CTk):
             on_update_status=self.on_update_status,
         )
 
-        ZLUDA.initialize_devices(self.train_config)
-
-        trainer = GenericTrainer(self.train_config, self.training_callbacks, self.training_commands)
+        if self.train_config.cloud.enabled:
+            trainer = CloudTrainer(self.train_config, self.training_callbacks, self.training_commands, reattach=self.cloud_tab.reattach)
+        else:
+            ZLUDA.initialize_devices(self.train_config)
+            trainer = GenericTrainer(self.train_config, self.training_callbacks, self.training_commands)
 
         try:
             trainer.start()
+            if self.train_config.cloud.enabled:
+                self.ui_state.get_var("secrets.cloud").update(self.train_config.secrets.cloud)
             trainer.train()
         except Exception:
+            if self.train_config.cloud.enabled:
+                self.ui_state.get_var("secrets.cloud").update(self.train_config.secrets.cloud)
             error_caught = True
             traceback.print_exc()
 
@@ -567,6 +580,7 @@ class TrainUI(ctk.CTk):
 
         # clear gpu memory
         del trainer
+
         self.training_thread = None
         self.training_commands = None
         torch.clear_autocast_cache()
@@ -601,12 +615,8 @@ class TrainUI(ctk.CTk):
         ], initialdir=".", initialfile="config.json")
 
         if file_path:
-            config_dict=self.train_config.to_pack_dict()
-            if 'secrets' in config_dict:
-                config_dict.pop('secrets')
-
             with open(file_path, "w") as f:
-                json.dump(config_dict, f, indent=4)
+                json.dump(self.train_config.to_pack_dict(secrets=False), f, indent=4)
 
     def sample_now(self):
         train_commands = self.training_commands
