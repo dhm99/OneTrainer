@@ -45,7 +45,6 @@ def lr_lambda_cosine(
 
     return lr_lambda
 
-
 def lr_lambda_cosine_with_restarts(
         scheduler_steps: int,
         num_cycles: float,
