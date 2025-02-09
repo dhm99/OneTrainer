@@ -5,11 +5,13 @@ from copy import deepcopy
 from typing import Any
 
 from modules.util.config.BaseConfig import BaseConfig
+from modules.util.config.CloudConfig import CloudConfig
 from modules.util.config.ConceptConfig import ConceptConfig
 from modules.util.config.SampleConfig import SampleConfig
 from modules.util.config.SecretsConfig import SecretsConfig
 from modules.util.enum.AlignPropLoss import AlignPropLoss
 from modules.util.enum.AttentionMechanism import AttentionMechanism
+from modules.util.enum.AudioFormat import AudioFormat
 from modules.util.enum.ConfigPart import ConfigPart
 from modules.util.enum.DataType import DataType
 from modules.util.enum.EMAMode import EMAMode
@@ -25,6 +27,7 @@ from modules.util.enum.Optimizer import Optimizer
 from modules.util.enum.TimestepDistribution import TimestepDistribution
 from modules.util.enum.TimeUnit import TimeUnit
 from modules.util.enum.TrainingMethod import TrainingMethod
+from modules.util.enum.VideoFormat import VideoFormat
 from modules.util.ModelNames import EmbeddingName, ModelNames
 from modules.util.ModelWeightDtypes import ModelWeightDtypes
 from modules.util.torch_util import default_device
@@ -208,7 +211,7 @@ class TrainEmbeddingConfig(BaseConfig):
     train: bool
     stop_training_after: int
     stop_training_after_unit: TimeUnit
-    token_count: int
+    token_count: int | None
     initial_embedding_text: str
 
     def __init__(self, data: list[(str, Any, type, bool)]):
@@ -225,7 +228,7 @@ class TrainEmbeddingConfig(BaseConfig):
         data.append(("train", True, bool, False))
         data.append(("stop_training_after", None, int, True))
         data.append(("stop_training_after_unit", TimeUnit.NEVER, TimeUnit, False))
-        data.append(("token_count", 1, int, False))
+        data.append(("token_count", 1, int, True))
         data.append(("initial_embedding_text", "*", str, False))
 
         return TrainEmbeddingConfig(data)
@@ -275,6 +278,7 @@ class TrainConfig(BaseConfig):
     learning_rate: float
     learning_rate_warmup_steps: float
     learning_rate_cycles: float
+    learning_rate_min_factor: float
     epochs: int
     batch_size: int
     gradient_accumulation_steps: int
@@ -320,6 +324,9 @@ class TrainConfig(BaseConfig):
 
     noising_weight: float
     noising_bias: float
+
+    timestep_shift: float
+    dynamic_timestep_shifting: bool
 
     # unet
     unet: TrainModelPartConfig
@@ -389,8 +396,13 @@ class TrainConfig(BaseConfig):
     sample_after: float
     sample_after_unit: TimeUnit
     sample_image_format: ImageFormat
+    sample_video_format: VideoFormat
+    sample_audio_format: AudioFormat
     samples_to_tensorboard: bool
     non_ema_sampling: bool
+
+    # cloud settings
+    cloud: CloudConfig
 
     # backup settings
     backup_after: float
@@ -650,15 +662,18 @@ class TrainConfig(BaseConfig):
 
         return None
 
-    def to_settings_dict(self) -> dict:
+    def to_settings_dict(self, secrets: bool) -> dict:
         config = TrainConfig.default_values().from_dict(self.to_dict())
 
         config.concepts = None
         config.samples = None
 
-        return config.to_dict()
+        config_dict = config.to_dict()
+        if not secrets:
+            config_dict.pop('secrets',None)
+        return config_dict
 
-    def to_pack_dict(self) -> dict:
+    def to_pack_dict(self, secrets: bool) -> dict:
         config = TrainConfig.default_values().from_dict(self.to_dict())
 
         if config.concepts is None:
@@ -675,7 +690,10 @@ class TrainConfig(BaseConfig):
                     samples[i] = SampleConfig.default_values().from_dict(samples[i])
                 config.samples = samples
 
-        return config.to_dict()
+        config_dict = config.to_dict()
+        if not secrets:
+            config_dict.pop('secrets',None)
+        return config_dict
 
     def to_unpacked_config(self) -> 'TrainConfig':
         config = TrainConfig.default_values().from_dict(self.to_dict())
@@ -731,6 +749,7 @@ class TrainConfig(BaseConfig):
         data.append(("learning_rate", 3e-6, float, False))
         data.append(("learning_rate_warmup_steps", 200.0, float, False))
         data.append(("learning_rate_cycles", 1.0, float, False))
+        data.append(("learning_rate_min_factor", 0.0, float, False))
         data.append(("epochs", 100, int, False))
         data.append(("batch_size", 1, int, False))
         data.append(("gradient_accumulation_steps", 1, int, False))
@@ -775,6 +794,9 @@ class TrainConfig(BaseConfig):
         data.append(("timestep_distribution", TimestepDistribution.UNIFORM, TimestepDistribution, False))
         data.append(("noising_weight", 0.0, float, False))
         data.append(("noising_bias", 0.0, float, False))
+        data.append(("timestep_shift", 1.0, float, False))
+        data.append(("dynamic_timestep_shifting", False, bool, False))
+
 
         # unet
         unet = TrainModelPartConfig.default_values()
@@ -864,6 +886,9 @@ class TrainConfig(BaseConfig):
         data.append(("additional_embeddings", [], list[TrainEmbeddingConfig], False))
         data.append(("embedding_weight_dtype", DataType.FLOAT_32, DataType, False))
 
+        # cloud
+        data.append(("cloud", CloudConfig.default_values(), CloudConfig, False))
+
         # lora
         data.append(("peft_type", PeftType.LORA, PeftType, False))
         data.append(("lora_model_name", "", str, False))
@@ -886,6 +911,8 @@ class TrainConfig(BaseConfig):
         data.append(("sample_after", 10, int, False))
         data.append(("sample_after_unit", TimeUnit.MINUTE, TimeUnit, False))
         data.append(("sample_image_format", ImageFormat.JPG, ImageFormat, False))
+        data.append(("sample_video_format", VideoFormat.MP4, VideoFormat, False))
+        data.append(("sample_audio_format", AudioFormat.MP3, AudioFormat, False))
         data.append(("samples_to_tensorboard", True, bool, False))
         data.append(("non_ema_sampling", True, bool, False))
 
