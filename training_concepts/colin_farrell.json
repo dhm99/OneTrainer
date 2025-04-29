@@ -54,6 +54,85 @@
         "text_variations": 1,
         "balancing": 1.0,
         "balancing_strategy": "REPEATS",
-        "loss_weight": 1.0
+        "loss_weight": 1.0,
+        "concept_stats": {
+            "file_size": 157516804,
+            "image_count": 36,
+            "image_with_mask_count": 0,
+            "image_with_caption_count": 36,
+            "video_count": 0,
+            "video_with_mask_count": 0,
+            "video_with_caption_count": 0,
+            "mask_count": 0,
+            "paired_masks": 0,
+            "unpaired_masks": 0,
+            "caption_count": 36,
+            "paired_captions": 36,
+            "unpaired_captions": 0,
+            "processing_time": 0.11438670000006823,
+            "directory_count": 1,
+            "max_pixels": [
+                16363250,
+                "_MG_1346-0.png",
+                "3625w x 4514h"
+            ],
+            "min_pixels": [
+                351135,
+                "IMG_2406.png",
+                "459w x 765h"
+            ],
+            "avg_pixels": 3847696.4722222225,
+            "max_length": [
+                0,
+                "-"
+            ],
+            "min_length": [
+                1000000000,
+                "-"
+            ],
+            "avg_length": 0,
+            "max_fps": [
+                0,
+                "-"
+            ],
+            "min_fps": [
+                1000000000,
+                "-"
+            ],
+            "avg_fps": 0,
+            "max_caption_length": [
+                317,
+                "IMG_1546.png",
+                66
+            ],
+            "min_caption_length": [
+                132,
+                "IMG_2229.png",
+                26
+            ],
+            "avg_caption_length": [
+                207.94444444444446,
+                41.30555555555556
+            ],
+            "aspect_buckets": {
+                "0.25": 0,
+                "0.29": 0,
+                "0.33": 0,
+                "0.4": 0,
+                "0.5": 0,
+                "0.57": 0,
+                "0.67": 0,
+                "0.8": 2,
+                "1.0": 7,
+                "1.25": 16,
+                "1.5": 5,
+                "1.75": 3,
+                "2.0": 2,
+                "2.5": 1,
+                "3.0": 0,
+                "3.5": 0,
+                "4.0": 0
+            }
+        }
     }
 ]
