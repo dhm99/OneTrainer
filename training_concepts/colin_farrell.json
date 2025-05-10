@@ -50,7 +50,7 @@
         "enabled": true,
         "validation_concept": false,
         "include_subdirectories": false,
-        "image_variations": 10,
+        "image_variations": 5,
         "text_variations": 1,
         "balancing": 1.0,
         "balancing_strategy": "REPEATS",
@@ -129,6 +129,142 @@
                 "1.75": 3,
                 "2.0": 2,
                 "2.5": 1,
+                "3.0": 0,
+                "3.5": 0,
+                "4.0": 0
+            }
+        }
+    },
+    {
+        "__version": 1,
+        "image": {
+            "__version": 0,
+            "enable_crop_jitter": true,
+            "enable_random_flip": false,
+            "enable_fixed_flip": false,
+            "enable_random_rotate": false,
+            "enable_fixed_rotate": false,
+            "random_rotate_max_angle": 0.0,
+            "enable_random_brightness": false,
+            "enable_fixed_brightness": false,
+            "random_brightness_max_strength": 0.0,
+            "enable_random_contrast": false,
+            "enable_fixed_contrast": false,
+            "random_contrast_max_strength": 0.0,
+            "enable_random_saturation": false,
+            "enable_fixed_saturation": false,
+            "random_saturation_max_strength": 0.0,
+            "enable_random_hue": false,
+            "enable_fixed_hue": false,
+            "random_hue_max_strength": 0.0,
+            "enable_resolution_override": false,
+            "resolution_override": "512",
+            "enable_random_circular_mask_shrink": false,
+            "enable_random_mask_rotate_crop": false
+        },
+        "text": {
+            "__version": 0,
+            "prompt_source": "sample",
+            "prompt_path": "",
+            "enable_tag_shuffling": false,
+            "tag_delimiter": ",",
+            "keep_tags_count": 1,
+            "tag_dropout_enable": false,
+            "tag_dropout_mode": "FULL",
+            "tag_dropout_probability": 0.0,
+            "tag_dropout_special_tags_mode": "NONE",
+            "tag_dropout_special_tags": "",
+            "tag_dropout_special_tags_regex": false,
+            "caps_randomize_enable": false,
+            "caps_randomize_mode": "capslock, title, first, random",
+            "caps_randomize_probability": 0.0,
+            "caps_randomize_lowercase": false
+        },
+        "name": "colin_farrell_2025-05-03",
+        "path": "C:/Users/dhmmi/SD_Training/OneTrainer_Images/dhmiller/2025-05-03/FINAL",
+        "seed": -489549418,
+        "enabled": true,
+        "validation_concept": false,
+        "include_subdirectories": false,
+        "image_variations": 5,
+        "text_variations": 1,
+        "balancing": 1.0,
+        "balancing_strategy": "REPEATS",
+        "loss_weight": 1.0,
+        "concept_stats": {
+            "file_size": 81111978,
+            "image_count": 22,
+            "image_with_mask_count": 0,
+            "image_with_caption_count": 22,
+            "video_count": 0,
+            "video_with_mask_count": 0,
+            "video_with_caption_count": 0,
+            "mask_count": 0,
+            "paired_masks": 0,
+            "unpaired_masks": 0,
+            "caption_count": 22,
+            "paired_captions": 22,
+            "unpaired_captions": 0,
+            "processing_time": 0.0029284000002007815,
+            "directory_count": 1,
+            "max_pixels": [
+                8175308,
+                "IMG_0290-0.png",
+                "2458w x 3326h"
+            ],
+            "min_pixels": [
+                594632,
+                "IMG_0806-0.png",
+                "622w x 956h"
+            ],
+            "avg_pixels": 3881948.0909090913,
+            "max_length": [
+                0,
+                "-"
+            ],
+            "min_length": [
+                1000000000,
+                "-"
+            ],
+            "avg_length": 0,
+            "max_fps": [
+                0,
+                "-"
+            ],
+            "min_fps": [
+                1000000000,
+                "-"
+            ],
+            "avg_fps": 0,
+            "max_caption_length": [
+                304,
+                "IMG_1690.png",
+                61
+            ],
+            "min_caption_length": [
+                118,
+                "IMG_4729.png",
+                25
+            ],
+            "avg_caption_length": [
+                192.86363636363637,
+                38.5
+            ],
+            "aspect_buckets": {
+                "0.25": 0,
+                "0.29": 0,
+                "0.33": 0,
+                "0.4": 0,
+                "0.5": 0,
+                "0.57": 0,
+                "0.67": 0,
+                "0.8": 1,
+                "1.0": 7,
+                "1.25": 9,
+                "1.5": 5,
+                "1.75": 0,
+                "2.0": 0,
+                "2.5": 0,
                 "3.0": 0,
                 "3.5": 0,
                 "4.0": 0
