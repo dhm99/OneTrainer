@@ -50,10 +50,89 @@
         "enabled": true,
         "validation_concept": false,
         "include_subdirectories": false,
-        "image_variations": 10,
+        "image_variations": 5,
         "text_variations": 1,
         "balancing": 1.0,
         "balancing_strategy": "REPEATS",
-        "loss_weight": 1.0
+        "loss_weight": 1.0,
+        "concept_stats": {
+            "file_size": 169544407,
+            "image_count": 47,
+            "image_with_mask_count": 0,
+            "image_with_caption_count": 47,
+            "video_count": 0,
+            "video_with_mask_count": 0,
+            "video_with_caption_count": 0,
+            "mask_count": 0,
+            "paired_masks": 0,
+            "unpaired_masks": 0,
+            "caption_count": 54,
+            "paired_captions": 47,
+            "unpaired_captions": 7,
+            "processing_time": 0.22996060003060848,
+            "directory_count": 1,
+            "max_pixels": [
+                12192768,
+                "IMG_0538.jpg",
+                "3024w x 4032h"
+            ],
+            "min_pixels": [
+                238550,
+                "img_0135_5140051350_o_mods.png",
+                "367w x 650h"
+            ],
+            "avg_pixels": 4702713.319148935,
+            "max_length": [
+                0,
+                "-"
+            ],
+            "min_length": [
+                1000000000,
+                "-"
+            ],
+            "avg_length": 0,
+            "max_fps": [
+                0,
+                "-"
+            ],
+            "min_fps": [
+                1000000000,
+                "-"
+            ],
+            "avg_fps": 0,
+            "max_caption_length": [
+                363,
+                "DSC_0238_mods.jpg",
+                71
+            ],
+            "min_caption_length": [
+                115,
+                "DSC_4185_mods.jpg",
+                21
+            ],
+            "avg_caption_length": [
+                221.1702127659575,
+                43.06382978723404
+            ],
+            "aspect_buckets": {
+                "0.25": 0,
+                "0.29": 0,
+                "0.33": 0,
+                "0.4": 0,
+                "0.5": 1,
+                "0.57": 0,
+                "0.67": 2,
+                "0.8": 2,
+                "1.0": 23,
+                "1.25": 11,
+                "1.5": 5,
+                "1.75": 3,
+                "2.0": 0,
+                "2.5": 0,
+                "3.0": 0,
+                "3.5": 0,
+                "4.0": 0
+            }
+        }
     }
 ]
